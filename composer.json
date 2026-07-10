@@ -1,0 +1,32 @@
+{
+    "name": "cerase-ai/cerase-connector-schema",
+    "description": "Shared Filament v5 connector-descriptor form schema (Authentication + Install sections) and validation rules for the Cerase platform — one source of truth for the Marketplace publisher form and the control-plane custom-connector form.",
+    "type": "library",
+    "keywords": ["cerase", "filament", "connector", "mcp", "schema", "descriptor"],
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "filament/filament": "^5.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.5 || ^12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Cerase\\ConnectorSchema\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Cerase\\ConnectorSchema\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

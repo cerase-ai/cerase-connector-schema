@@ -1,0 +1,44 @@
+name: CI
+
+# Unit tests for the shared connector-descriptor schema package. Runs on
+# every push to main, every PR, and every v* tag. The suite is pure PHP
+# (validation rules + descriptor config) — no Laravel/Filament boot needed —
+# so it is fast and deterministic. Filament is a runtime `require`, so
+# composer install resolves the full Filament v5 tree (the Section builders
+# reference it); intl matches Filament's requirement.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (php ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: intl
+          tools: composer
+          coverage: none
+
+      - name: Install composer deps
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: PHPUnit
+        run: vendor/bin/phpunit --colors=always
