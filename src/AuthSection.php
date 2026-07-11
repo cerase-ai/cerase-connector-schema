@@ -37,30 +37,40 @@ final class AuthSection
             $authProvider->required(fn (Get $get): bool => $get('auth_kind') === 'oauth2');
         }
 
+        $fields = [
+            Select::make('auth_kind')
+                ->label($config->label('auth.kind.label'))
+                ->options($config->options('auth.kind.options'))
+                ->default('none')
+                ->required()
+                ->native(false)
+                ->live(),
+            Select::make('auth_registration')
+                ->label($config->label('auth.registration.label'))
+                ->options($config->options('auth.registration.options'))
+                ->native(false)
+                ->visible(fn (Get $get): bool => $get('auth_kind') === 'oauth2'),
+            $authProvider,
+            Textarea::make('auth_instructions')
+                ->label($config->label('auth.instructions.label'))
+                ->helperText($config->label('auth.instructions.helper'))
+                ->rows(5)
+                ->columnSpanFull()
+                ->visible(fn (Get $get): bool => in_array($get('auth_kind'), ['bearer', 'oauth2'], true)),
+        ];
+
+        // The control-plane locks the descriptor after creation (M-CONN-PKG-2).
+        // OFF by default → the marketplace keeps every field editable.
+        if (($disabled = $config->getDisabledWhen()) !== null) {
+            foreach ($fields as $field) {
+                $field->disabled($disabled);
+            }
+        }
+
         $section = Section::make($config->label('auth.title'))
             ->description($config->label('auth.description'))
             ->columns(2)
-            ->schema([
-                Select::make('auth_kind')
-                    ->label($config->label('auth.kind.label'))
-                    ->options($config->options('auth.kind.options'))
-                    ->default('none')
-                    ->required()
-                    ->native(false)
-                    ->live(),
-                Select::make('auth_registration')
-                    ->label($config->label('auth.registration.label'))
-                    ->options($config->options('auth.registration.options'))
-                    ->native(false)
-                    ->visible(fn (Get $get): bool => $get('auth_kind') === 'oauth2'),
-                $authProvider,
-                Textarea::make('auth_instructions')
-                    ->label($config->label('auth.instructions.label'))
-                    ->helperText($config->label('auth.instructions.helper'))
-                    ->rows(5)
-                    ->columnSpanFull()
-                    ->visible(fn (Get $get): bool => in_array($get('auth_kind'), ['bearer', 'oauth2'], true)),
-            ]);
+            ->schema($fields);
 
         if (($gate = $config->getSectionVisibility()) !== null) {
             $section->visible($gate);

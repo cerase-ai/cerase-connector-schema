@@ -39,10 +39,7 @@ final class InstallSection
             $credentialEnv->required(fn (Get $get): bool => $get('credential_delivery') === 'env');
         }
 
-        $section = Section::make($config->label('install.title'))
-            ->description($config->label('install.description'))
-            ->columns(2)
-            ->schema([
+        $fields = [
                 Select::make('install_mode')
                     ->label($config->label('install.mode.label'))
                     ->options($config->installModeOptions())
@@ -109,7 +106,20 @@ final class InstallSection
                         Textarea::make('template')->required()->rows(3)->label($config->label('credential.files.template.label')),
                     ])
                     ->default([]),
-            ]);
+        ];
+
+        // The control-plane locks the descriptor after creation (M-CONN-PKG-2).
+        // OFF by default → the marketplace keeps every field editable.
+        if (($disabled = $config->getDisabledWhen()) !== null) {
+            foreach ($fields as $field) {
+                $field->disabled($disabled);
+            }
+        }
+
+        $section = Section::make($config->label('install.title'))
+            ->description($config->label('install.description'))
+            ->columns(2)
+            ->schema($fields);
 
         if (($gate = $config->getSectionVisibility()) !== null) {
             $section->visible($gate);

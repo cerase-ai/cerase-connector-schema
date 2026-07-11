@@ -71,10 +71,13 @@ return $schema->components([
 
 ```php
 // Control-plane: Italian labels, three install modes (no repo clone), sections
-// always visible (every record is a connector). See M-CONN-PKG-2.
+// always visible (every record is a connector), and the whole descriptor
+// LOCKED after creation (a custom connector is immutable post-install). See
+// M-CONN-PKG-2.
 $config = ConnectorSchemaConfig::make()
     ->locale('it')
-    ->withoutNoneMode();
+    ->withoutNoneMode()
+    ->disabledWhen(fn (string $operation): bool => $operation !== 'create');
 ```
 
 ### Configuration
@@ -85,6 +88,7 @@ $config = ConnectorSchemaConfig::make()
 | `withoutNoneMode()` | Drop the `none` (clone-the-repo) mode | — |
 | `locale(string $locale)` | Label catalog: `en` or `it` | `en` |
 | `visibleWhen(Closure $gate)` | Section-level visibility predicate `fn (Get): bool` | always visible |
+| `disabledWhen(Closure $gate)` | Disable EVERY descriptor field when truthy (passed straight to Filament's `->disabled()`, so it may inject `$operation`/`$get`/`$record`) — the control-plane locks a custom connector after creation | not disabled |
 | `strictCrossField(bool $on = true)` | Enable the OPTIONAL cross-field requireds | `false` (off) |
 
 ### Standalone validation rules

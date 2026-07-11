@@ -77,6 +77,33 @@ final class ConnectorSchemaConfigTest extends TestCase
         self::assertSame($gate, ConnectorSchemaConfig::make()->visibleWhen($gate)->getSectionVisibility());
     }
 
+    public function test_disabled_when_defaults_to_null_and_is_settable(): void
+    {
+        // OFF by default so adopting the package changes no app's behavior
+        // (the marketplace keeps every descriptor field editable).
+        self::assertNull(ConnectorSchemaConfig::make()->getDisabledWhen());
+
+        // The control-plane locks the descriptor after creation (M-CONN-PKG-2).
+        $lock = static fn (string $operation): bool => $operation !== 'create';
+        self::assertSame($lock, ConnectorSchemaConfig::make()->disabledWhen($lock)->getDisabledWhen());
+    }
+
+    public function test_disabled_when_is_carried_across_other_setters(): void
+    {
+        // A later ->locale()/->withoutNoneMode() must not drop the lock closure
+        // (the control-plane configures both on one fluent chain).
+        $lock = static fn (string $operation): bool => $operation !== 'create';
+
+        $config = ConnectorSchemaConfig::make()
+            ->disabledWhen($lock)
+            ->locale('it')
+            ->withoutNoneMode();
+
+        self::assertSame($lock, $config->getDisabledWhen());
+        self::assertSame('it', $config->getLocale());
+        self::assertSame(['remote_url', 'command', 'image'], $config->getInstallModes());
+    }
+
     public function test_locale_switches_the_catalog(): void
     {
         $it = ConnectorSchemaConfig::make()->locale('it');
@@ -90,15 +117,18 @@ final class ConnectorSchemaConfigTest extends TestCase
     public function test_the_config_is_immutable_fluent(): void
     {
         $base = ConnectorSchemaConfig::make();
-        $mutated = $base->withoutNoneMode()->strictCrossField()->locale('it');
+        $lock = static fn (string $operation): bool => $operation !== 'create';
+        $mutated = $base->withoutNoneMode()->strictCrossField()->locale('it')->disabledWhen($lock);
 
         // The original is untouched (each setter returns a fresh instance).
         self::assertSame(['remote_url', 'command', 'image', 'none'], $base->getInstallModes());
         self::assertFalse($base->isStrictCrossField());
         self::assertSame('en', $base->getLocale());
+        self::assertNull($base->getDisabledWhen());
 
         self::assertSame(['remote_url', 'command', 'image'], $mutated->getInstallModes());
         self::assertTrue($mutated->isStrictCrossField());
         self::assertSame('it', $mutated->getLocale());
+        self::assertSame($lock, $mutated->getDisabledWhen());
     }
 }

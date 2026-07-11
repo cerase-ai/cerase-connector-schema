@@ -30,12 +30,14 @@ final class ConnectorSchemaConfig
     /**
      * @param  list<string>  $installModes
      * @param  (Closure(mixed): bool)|null  $sectionVisibility
+     * @param  Closure|null  $disabledWhen
      */
     private function __construct(
         private array $installModes = ['remote_url', 'command', 'image', 'none'],
         private string $locale = 'en',
         private ?Closure $sectionVisibility = null,
         private bool $strictCrossField = false,
+        private ?Closure $disabledWhen = null,
     ) {}
 
     public static function make(): self
@@ -87,6 +89,24 @@ final class ConnectorSchemaConfig
         return $this->with(strictCrossField: $enabled);
     }
 
+    /**
+     * Disable EVERY field of the Authentication + Install sections when the
+     * predicate is truthy. The control-plane locks a custom connector's
+     * descriptor after creation (the fields are immutable post-install), so it
+     * passes `fn (string $operation): bool => $operation !== 'create'`. The
+     * closure is handed straight to Filament's `->disabled()`, so it may inject
+     * `$operation` / `$get` / `$record` like any Filament callback.
+     *
+     * OFF by default — the marketplace keeps every descriptor field editable,
+     * so adopting the package changes no app's behavior (M-CONN-PKG-2).
+     *
+     * @param  Closure  $callback
+     */
+    public function disabledWhen(Closure $callback): self
+    {
+        return $this->with(disabledWhen: $callback);
+    }
+
     // ── getters ──────────────────────────────────────────────────────────────
 
     /**
@@ -113,6 +133,15 @@ final class ConnectorSchemaConfig
     public function isStrictCrossField(): bool
     {
         return $this->strictCrossField;
+    }
+
+    /**
+     * The predicate that disables every descriptor field, or null when the
+     * fields are always editable (the default / marketplace behavior).
+     */
+    public function getDisabledWhen(): ?Closure
+    {
+        return $this->disabledWhen;
     }
 
     // ── computed ─────────────────────────────────────────────────────────────
@@ -180,26 +209,32 @@ final class ConnectorSchemaConfig
     /**
      * @param  list<string>|null  $installModes
      * @param  (Closure(mixed): bool)|null  $sectionVisibility
+     * @param  Closure|null  $disabledWhen
      */
     private function with(
         ?array $installModes = null,
         ?string $locale = null,
         ?Closure $sectionVisibility = null,
         ?bool $strictCrossField = null,
+        ?Closure $disabledWhen = null,
     ): self {
         $clone = new self(
             $installModes ?? $this->installModes,
             $locale ?? $this->locale,
             $this->sectionVisibility,
             $strictCrossField ?? $this->strictCrossField,
+            $this->disabledWhen,
         );
 
-        // A null $sectionVisibility means "unchanged" (we can't distinguish
-        // "clear it" from "leave it" through a nullable param, and no caller
-        // needs to clear it), so carry the existing gate unless a new one is
+        // A null closure means "unchanged" (we can't distinguish "clear it"
+        // from "leave it" through a nullable param, and no caller needs to
+        // clear it), so carry the existing closures unless a new one is
         // explicitly supplied.
         if ($sectionVisibility !== null) {
             $clone->sectionVisibility = $sectionVisibility;
+        }
+        if ($disabledWhen !== null) {
+            $clone->disabledWhen = $disabledWhen;
         }
 
         return $clone;
