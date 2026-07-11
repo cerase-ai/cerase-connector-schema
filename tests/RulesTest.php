@@ -114,4 +114,77 @@ final class RulesTest extends TestCase
         self::assertSame('regex:'.Rules::COMMAND_REGEX, Rules::commandRule());
         self::assertSame('regex:'.Rules::IMAGE_REGEX, Rules::imageRule());
     }
+
+    // ── strict cross-field rules (M-CONN-GUARD-1) ────────────────────────────
+    //
+    // The two strict rules the forms enforce via ->required() under
+    // strictCrossField() are also exposed as a PURE function so the server side
+    // (the control-plane's CustomConnectorRegistrar) enforces the IDENTICAL set
+    // — one definition, no drift between the form and the API/maintainer path.
+
+    public function test_a_fully_specified_descriptor_has_no_cross_field_violations(): void
+    {
+        self::assertSame([], Rules::crossFieldViolations([
+            'auth_kind' => 'oauth2',
+            'auth_provider' => 'notion',
+            'credential_delivery' => 'env',
+            'credential_env' => 'NOTION_TOKEN',
+        ]));
+    }
+
+    public function test_env_delivery_without_credential_env_is_flagged(): void
+    {
+        self::assertSame(
+            [Rules::VIOLATION_CREDENTIAL_ENV_REQUIRED],
+            Rules::crossFieldViolations([
+                'auth_kind' => 'bearer',
+                'credential_delivery' => 'env',
+                // credential_env missing
+            ]),
+        );
+
+        // Blank string counts as missing.
+        self::assertSame(
+            [Rules::VIOLATION_CREDENTIAL_ENV_REQUIRED],
+            Rules::crossFieldViolations(['credential_delivery' => 'env', 'credential_env' => '  ']),
+        );
+    }
+
+    public function test_oauth2_without_provider_is_flagged(): void
+    {
+        self::assertSame(
+            [Rules::VIOLATION_AUTH_PROVIDER_REQUIRED],
+            Rules::crossFieldViolations([
+                'auth_kind' => 'oauth2',
+                // auth_provider missing
+            ]),
+        );
+
+        self::assertSame(
+            [Rules::VIOLATION_AUTH_PROVIDER_REQUIRED],
+            Rules::crossFieldViolations(['auth_kind' => 'oauth2', 'auth_provider' => '']),
+        );
+    }
+
+    public function test_both_rules_can_fire_together_in_a_stable_order(): void
+    {
+        self::assertSame(
+            [Rules::VIOLATION_CREDENTIAL_ENV_REQUIRED, Rules::VIOLATION_AUTH_PROVIDER_REQUIRED],
+            Rules::crossFieldViolations([
+                'auth_kind' => 'oauth2',
+                'credential_delivery' => 'env',
+            ]),
+        );
+    }
+
+    public function test_non_triggering_deliveries_and_kinds_are_never_flagged(): void
+    {
+        // header/file delivery never needs credential_env; none/bearer never
+        // needs a provider — the rules are strictly conditional.
+        self::assertSame([], Rules::crossFieldViolations(['credential_delivery' => 'header']));
+        self::assertSame([], Rules::crossFieldViolations(['credential_delivery' => 'file']));
+        self::assertSame([], Rules::crossFieldViolations(['auth_kind' => 'none']));
+        self::assertSame([], Rules::crossFieldViolations(['auth_kind' => 'bearer']));
+        self::assertSame([], Rules::crossFieldViolations([]));
+    }
 }

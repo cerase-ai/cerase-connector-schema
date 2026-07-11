@@ -105,6 +105,11 @@ Rules::commandRule();             // 'regex:~^[A-Za-z0-9 \-_./:@%+]+$~'  (Larave
 Rules::imageRule();               // 'regex:~^[A-Za-z0-9._/:@\-+]+$~'
 Rules::commandIsValid($string);   // bool
 Rules::imageIsValid($string);     // bool
+
+// The strict cross-field rules as a PURE function (server-side enforcement).
+Rules::crossFieldViolations($descriptor); // list<string> of violated codes
+Rules::VIOLATION_CREDENTIAL_ENV_REQUIRED; // 'credential_env_required'
+Rules::VIOLATION_AUTH_PROVIDER_REQUIRED;  // 'auth_provider_required'
 ```
 
 ### Strict cross-field rules (opt-in, OFF by default)
@@ -115,8 +120,11 @@ package changes no app's behavior:
 - `auth_provider` required when `auth_kind === 'oauth2'`;
 - `credential_env` required when `credential_delivery === 'env'`.
 
-Enable them with `->strictCrossField()`. They are turned on by a later
-milestone (`M-CONN-GUARD-1`), not by adoption.
+Enable them on the **form** with `->strictCrossField()` (turned on by
+`M-CONN-GUARD-1`). For **server-side** enforcement (an app's registrar / API
+path), evaluate the identical rules as a pure function via
+`Rules::crossFieldViolations($descriptor)` — it returns the list of violated
+codes (empty = valid), so the form and the server can never drift.
 
 ## Tests
 
