@@ -28,6 +28,11 @@ jobs:
         php: ['8.3', '8.4']
     steps:
       - uses: actions/checkout@v4
+      # M-DOCS-PARITY-ALL-REPOS-1 — no document may name a command, file or path
+      # that does not exist. A parity check that lives in one repo's local suite
+      # is a check for one repo, so the same script runs in every repo's CI.
+      - name: Docs parity
+        run: bash scripts/docs-parity.sh
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
