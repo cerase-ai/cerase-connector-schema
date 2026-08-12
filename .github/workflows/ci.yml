@@ -34,6 +34,13 @@ jobs:
       - name: Docs parity
         run: bash scripts/docs-parity.sh
 
+      # A0 step 4 · G2 + G3 — no credential file in this checkout, no retired
+      # credential name in use. Same script in every repo, synced from core by
+      # `scripts/sync-tooling.sh` and pinned by `scripts/TOOLING.sha256`: a
+      # secrets guard that lives in one repo guards one repo.
+      - name: Secrets guard
+        run: bash scripts/secrets-guard.sh
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
