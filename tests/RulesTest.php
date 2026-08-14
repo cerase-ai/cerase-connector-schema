@@ -12,8 +12,7 @@ use PHPUnit\Framework\TestCase;
  * The two format rules are the security boundary of the descriptor: the
  * install command string is served to the sandboxed runner (block shell
  * metacharacters) and the image ref must be a bare OCI reference. Both regexes
- * are the SAME literals the marketplace form has enforced since
- * M-MKT-AUTHZ-HARDEN-1 — this table pins them.
+ * are the SAME literals the marketplace form enforces — this table pins them.
  */
 final class RulesTest extends TestCase
 {
@@ -115,7 +114,7 @@ final class RulesTest extends TestCase
         self::assertSame('regex:'.Rules::IMAGE_REGEX, Rules::imageRule());
     }
 
-    // ── strict cross-field rules (M-CONN-GUARD-1) ────────────────────────────
+    // ── strict cross-field rules ──────────────────────────────────────────────
     //
     // The two strict rules the forms enforce via ->required() under
     // strictCrossField() are also exposed as a PURE function so the server side

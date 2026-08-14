@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
  * incl. 'none'; control-plane will use 3), the label locale, the section-level
  * visibility gate, and whether the OPTIONAL strict cross-field rules are on.
  * Strict rules are OFF by default so adopting the package changes no app's
- * behavior — a later milestone (M-CONN-GUARD-1) opts in.
+ * behavior; an app opts in.
  */
 final class ConnectorSchemaConfigTest extends TestCase
 {
@@ -83,7 +83,7 @@ final class ConnectorSchemaConfigTest extends TestCase
         // (the marketplace keeps every descriptor field editable).
         self::assertNull(ConnectorSchemaConfig::make()->getDisabledWhen());
 
-        // The control-plane locks the descriptor after creation (M-CONN-PKG-2).
+        // The control-plane locks the descriptor after creation.
         $lock = static fn (string $operation): bool => $operation !== 'create';
         self::assertSame($lock, ConnectorSchemaConfig::make()->disabledWhen($lock)->getDisabledWhen());
     }

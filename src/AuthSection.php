@@ -59,7 +59,7 @@ final class AuthSection
                 ->visible(fn (Get $get): bool => in_array($get('auth_kind'), ['bearer', 'oauth2'], true)),
         ];
 
-        // The control-plane locks the descriptor after creation (M-CONN-PKG-2).
+        // The control-plane locks the descriptor after creation.
         // OFF by default → the marketplace keeps every field editable.
         if (($disabled = $config->getDisabledWhen()) !== null) {
             foreach ($fields as $field) {

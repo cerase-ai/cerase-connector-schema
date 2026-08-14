@@ -19,8 +19,8 @@ use Closure;
  *     `type === 'connector'`; the control-plane, whose records are always
  *     connectors, leaves it open);
  *   - whether the OPTIONAL strict cross-field rules are enforced. They are OFF
- *     by default, so adopting the package changes no app's behavior — a later
- *     milestone (M-CONN-GUARD-1) opts in.
+ *     by default, so adopting the package changes no app's behavior; an app
+ *     opts in.
  *
  * Every setter returns a fresh instance, so a shared base config can be
  * specialised without side effects.
@@ -98,7 +98,7 @@ final class ConnectorSchemaConfig
      * `$operation` / `$get` / `$record` like any Filament callback.
      *
      * OFF by default — the marketplace keeps every descriptor field editable,
-     * so adopting the package changes no app's behavior (M-CONN-PKG-2).
+     * so adopting the package changes no app's behavior.
      *
      * @param  Closure  $callback
      */

@@ -12,9 +12,8 @@ namespace Cerase\ConnectorSchema;
  * sandboxed runner, so no quoting, pipes, redirection, substitution or
  * chaining may pass. `IMAGE_REGEX` guards the OCI image reference so nothing
  * can break out of the docker argument. Both literals are byte-identical to
- * the ones the marketplace publisher form has enforced since
- * M-MKT-AUTHZ-HARDEN-1; extracting them here makes the two apps share ONE
- * pattern instead of two copies that can drift.
+ * the ones the marketplace publisher form enforces; they live here so the two
+ * apps share ONE pattern instead of two copies that can drift.
  */
 final class Rules
 {
@@ -81,7 +80,7 @@ final class Rules
      * when {@see ConnectorSchemaConfig::strictCrossField()} is on. Exposing them
      * here lets the SERVER side (the control-plane's custom-connector registrar /
      * API-maintainer path) reject the identical set — one definition, so the
-     * form and the API can never drift (M-CONN-GUARD-1).
+     * form and the API can never drift.
      *
      * Returns the violated rule codes (an empty list = the descriptor is
      * well-formed against the strict rules). A blank string counts as missing:

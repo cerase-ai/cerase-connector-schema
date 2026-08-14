@@ -8,7 +8,7 @@ namespace Cerase\ConnectorSchema;
  * Locale catalogs for the connector-descriptor form. The English catalog is
  * byte-for-byte the copy the marketplace publisher form has shipped (so the
  * marketplace can adopt the package with zero visible change); the Italian
- * catalog is for the control-plane custom-connector form (M-CONN-PKG-2).
+ * catalog is for the control-plane custom-connector form.
  *
  * Keys are dotted strings; a handful resolve to option maps (value => label).
  */

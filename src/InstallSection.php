@@ -108,7 +108,7 @@ final class InstallSection
                     ->default([]),
         ];
 
-        // The control-plane locks the descriptor after creation (M-CONN-PKG-2).
+        // The control-plane locks the descriptor after creation.
         // OFF by default → the marketplace keeps every field editable.
         if (($disabled = $config->getDisabledWhen()) !== null) {
             foreach ($fields as $field) {
