@@ -128,13 +128,20 @@ codes (empty = valid), so the form and the server can never drift.
 
 ## Tests
 
-The package suite is pure PHP (rules + config) and runs with plain PHPUnit — no
-Laravel/Filament boot:
+`./run-tests.sh` runs everything CI can refuse a push on — the docs-parity
+guard, the comment convention, the secrets guard, the secret scan and the
+suite — and needs no PHP on the host: it falls back to a cached container image
+carrying `intl`.
 
 ```bash
 composer install
-vendor/bin/phpunit
+./run-tests.sh                 # everything CI checks
+./run-tests.sh phpunit         # the suite only
 ```
+
+The package suite is pure PHP (rules + config) and runs with plain PHPUnit — no
+Laravel/Filament boot, so `vendor/bin/phpunit` works directly where a host PHP
+with `intl` is installed.
 
 The Filament `Section` builders are behaviorally covered by the **consuming
 apps'** suites (the marketplace publisher-form tests prove byte-for-byte
