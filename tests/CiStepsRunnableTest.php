@@ -55,10 +55,14 @@ final class CiStepsRunnableTest extends TestCase
             'no guard script was found in the workflow, so this test would pass by looking at nothing'
         );
 
+        // The INVOCATION, never the name on its own. Written as a substring
+        // check this test passed on a runner whose only remaining occurrence of
+        // the guard was the word in a comment — the mention rather than the
+        // use, which is the exact way a guard is made to assert nothing.
         $runner = $this->runner();
         foreach ($scripts as $script) {
-            self::assertStringContainsString(
-                $script,
+            self::assertMatchesRegularExpression(
+                '/^[^#\n]*bash[^\n]*'.preg_quote($script, '/').'/m',
                 $runner,
                 "CI refuses a push on scripts/{$script} and no local tier runs it"
             );
