@@ -2,3 +2,9 @@
 /composer.lock
 /.phpunit.cache/
 /.phpunit.result.cache
+
+# Agent worktrees. `.claude/worktrees/` holds a full checkout per background
+# agent -- over a gigabyte across this workspace -- and while it is untracked
+# and unignored it lands in a tree backup, an editor sync and a docker build
+# context alike.
+.claude/
