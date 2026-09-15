@@ -37,7 +37,7 @@ jobs:
       # only in cerase-core's local suite. It runs first, so no step runs a
       # script the pin has not vouched for.
       - name: Vendored tooling matches the sha it recorded
-        run: sha256sum --check scripts/TOOLING.sha256
+        run: sha256sum --check scripts/TOOLING.sha256 scripts/TOOLING.seal
 
       # M-DOCS-PARITY-ALL-REPOS-1 — no document may name a command, file or path
       # that does not exist. A parity check that lives in one repo's local suite

@@ -71,7 +71,7 @@ DOCKERFILE
 # edited here no longer decides what cerase-core's decides.
 run_tooling_pin() {
     info "vendored tooling against its pin"
-    if sha256sum --check scripts/TOOLING.sha256; then
+    if sha256sum --check scripts/TOOLING.sha256 scripts/TOOLING.seal; then
         ok "vendored tooling matches its pin"
     else
         echo "a vendored file no longer matches scripts/TOOLING.sha256." >&2
