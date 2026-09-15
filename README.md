@@ -128,10 +128,14 @@ codes (empty = valid), so the form and the server can never drift.
 
 ## Tests
 
-`./run-tests.sh` runs everything CI can refuse a push on — the docs-parity
-guard, the comment convention, the secrets guard, the secret scan and the
-suite — and needs no PHP on the host: it falls back to a cached container image
-carrying `intl`.
+`./run-tests.sh` runs everything CI can refuse a push on — the vendored-tooling
+pin, the docs-parity guard, the comment convention, the secrets guard, the
+secret scan and the suite — and needs no PHP on the host: it falls back to a
+cached container image carrying `intl`.
+
+The three guard scripts are copies of `cerase-core`'s, written by its
+`scripts/sync-tooling.sh` and pinned by `scripts/TOOLING.sha256`. Editing a copy
+here reds the pin check, locally and in CI; the change belongs in `cerase-core`.
 
 ```bash
 composer install
