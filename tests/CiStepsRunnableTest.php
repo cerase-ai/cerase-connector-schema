@@ -80,4 +80,65 @@ final class CiStepsRunnableTest extends TestCase
         self::assertStringContainsString('phpunit', $this->workflow());
         self::assertStringContainsString('phpunit', $this->runner());
     }
+
+    /**
+     * The guard scripts are cerase-core's, copied here and pinned by
+     * scripts/TOOLING.sha256. Without a check against the pin, a copy edited in
+     * this repo decides the push while cerase-core's decides every other repo,
+     * and nothing in this repo's CI says so.
+     *
+     * The scripts are read from the pin itself, so a row added to it tomorrow
+     * is covered on the day it lands.
+     */
+    public function test_the_workflow_checks_the_vendored_tooling_against_its_pin_before_running_any_of_it(): void
+    {
+        $body = $this->withoutComments($this->workflow());
+
+        $check = strpos($body, 'sha256sum --check scripts/TOOLING.sha256');
+        self::assertNotFalse(
+            $check,
+            'CI runs the vendored scripts without checking them against scripts/TOOLING.sha256'
+        );
+
+        $firstRun = null;
+        foreach ($this->pinnedScripts() as $script) {
+            $at = strpos($body, $script);
+            if ($at !== false && ($firstRun === null || $at < $firstRun)) {
+                $firstRun = $at;
+            }
+        }
+        self::assertNotNull(
+            $firstRun,
+            'the workflow runs none of the pinned scripts, so the order below would compare nothing'
+        );
+        self::assertLessThan($firstRun, $check, 'a pinned script runs before its copy is checked against the pin');
+    }
+
+    public function test_the_runner_checks_the_vendored_tooling_against_the_same_pin(): void
+    {
+        self::assertMatchesRegularExpression(
+            '/^[^#\n]*sha256sum --check scripts\/TOOLING\.sha256/m',
+            $this->runner(),
+            'CI refuses a push on a drifted copy of the vendored tooling and no local tier checks it'
+        );
+    }
+
+    /** @return list<string> */
+    private function pinnedScripts(): array
+    {
+        $pin = file_get_contents($this->root().'/scripts/TOOLING.sha256');
+        self::assertIsString($pin, 'the tooling pin is unreadable, so this test would assert nothing');
+        preg_match_all('#^[0-9a-f]{64}\s+(scripts/[A-Za-z0-9_.-]+\.sh)$#m', $pin, $m);
+        self::assertNotEmpty($m[1], 'the tooling pin lists no script');
+
+        return $m[1];
+    }
+
+    private function withoutComments(string $text): string
+    {
+        return implode("\n", array_filter(
+            explode("\n", $text),
+            static fn (string $line): bool => preg_match('/^\s*#/', $line) !== 1,
+        ));
+    }
 }

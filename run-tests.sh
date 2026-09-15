@@ -4,15 +4,16 @@
 #
 # usage:
 #   ./run-tests.sh                 # everything CI can refuse a push on
+#   ./run-tests.sh tooling         # the vendored guard scripts still match their pin
 #   ./run-tests.sh docs            # no document names a command or path that is gone
 #   ./run-tests.sh comments        # the comment convention, on this push's commits
 #   ./run-tests.sh secrets         # no credential file in the tree, no retired name
 #   ./run-tests.sh gitleaks        # the secret scan that hard-blocks the publish
 #   ./run-tests.sh phpunit [args]  # the suite only, arguments passed through
 #
-# WHY THIS FILE EXISTS. The workflow has five things that can refuse a push and
-# this repo had no runner at all, so four of them were reachable only by pushing
-# and reading the result, and the fifth only by knowing to type it. That is the
+# WHY THIS FILE EXISTS. This repo had no runner at all, so every check the
+# workflow can refuse a push on was reachable only by pushing and reading the
+# result, except PHPUnit, reachable only by knowing to type it. That is the
 # shape the secret scan was found in elsewhere: a step no local tier runs, whose
 # first sign of a refusal is a red publish.
 #
@@ -63,6 +64,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends libicu-dev libz
 DOCKERFILE
     fi
     docker run --rm -v "$ROOT":/app -w /app "$IMAGE" php "$@"
+}
+
+# The guard scripts are cerase-core's, copied here by its scripts/sync-tooling.sh
+# and pinned by scripts/TOOLING.sha256. Checked before any of them runs: a copy
+# edited here no longer decides what cerase-core's decides.
+run_tooling_pin() {
+    info "vendored tooling against its pin"
+    if sha256sum --check scripts/TOOLING.sha256; then
+        ok "vendored tooling matches its pin"
+    else
+        echo "a vendored file no longer matches scripts/TOOLING.sha256." >&2
+        echo "  These are copies of cerase-core's. Edit them there, then run its scripts/sync-tooling.sh." >&2
+        FAILED+=("tooling-pin")
+    fi
 }
 
 run_docs_parity() {
@@ -143,12 +158,13 @@ run_phpunit() {
 }
 
 case "${1:-all}" in
+    tooling)  run_tooling_pin ;;
     docs)     run_docs_parity ;;
     comments) run_comment_check ;;
     secrets)  run_secrets_guard ;;
     gitleaks) run_gitleaks ;;
     phpunit)  shift; run_phpunit "$@" ;;
-    all)      run_docs_parity; run_comment_check; run_secrets_guard; run_gitleaks; run_phpunit ;;
+    all)      run_tooling_pin; run_docs_parity; run_comment_check; run_secrets_guard; run_gitleaks; run_phpunit ;;
     *)        die "unknown tier '$1' — see the header of this file" ;;
 esac
 

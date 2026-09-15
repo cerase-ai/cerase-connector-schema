@@ -31,6 +31,14 @@ jobs:
       # this push, which a shallow clone does not contain.
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
+      # The three guard scripts below are cerase-core's, copied here by its
+      # scripts/sync-tooling.sh. The pin is what makes the copy a copy: without
+      # this step a copy edited here decides the push, and the divergence shows
+      # only in cerase-core's local suite. It runs first, so no step runs a
+      # script the pin has not vouched for.
+      - name: Vendored tooling matches the sha it recorded
+        run: sha256sum --check scripts/TOOLING.sha256
+
       # M-DOCS-PARITY-ALL-REPOS-1 — no document may name a command, file or path
       # that does not exist. A parity check that lives in one repo's local suite
       # is a check for one repo, so the same script runs in every repo's CI.
