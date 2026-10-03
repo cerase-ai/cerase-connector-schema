@@ -1,39 +1,43 @@
 # cerase-connector-schema
 
-Shared **connector-descriptor form schema** for the Cerase platform — one
-source of truth for the connector *Authentication* and *Install* sections
-rendered by two Filament v5 apps:
+The shape of a Cerase connector descriptor, as a Composer library: the
+Filament v5 form sections that edit it and the validation rules that check it.
+Two applications use it, so the form a connector is published with and the
+form a customer registers a custom connector with are the same component:
 
-- the **Cerase Marketplace** publisher form (`PackageResource`), and
-- the **control-plane** custom-connector form (`McpServerResource`).
+- the **Cerase Marketplace** publisher form (`PackageResource`, in
+  `cerase-marketplace`), and
+- the **control-plane** custom-connector form (`McpServerResource`, in
+  `cerase-core`), whose registrar also runs the rules server-side.
 
-Before this package the control-plane form was a hand-copied subset of the
-marketplace form that had silently drifted (it had lost section descriptions,
-the `url()` rule on the remote URL, the shell-metachar rule on the command, the
-OCI-ref rule on the image, per-mode `required`s, and more). This package makes
-the two components **identical by construction**: change the schema once, both
-apps change together.
+It is a library and nothing else: no image, no service, nothing in any
+compose file. It runs inside whichever application requires it — the
+control-plane image on every appliance, and the Marketplace image on the
+management plane.
 
-## What it is (and isn't)
+## What it owns
 
-It owns the parts of the descriptor that are genuinely shared:
+- **Authentication section** — `auth_kind`, `auth_registration`,
+  `auth_provider`, `auth_instructions`.
+- **Install section** — `install_mode`, `install_remote_url`,
+  `install_command`, `install_image`, `install_env_passthrough`,
+  `credential_delivery`, `credential_env`, `credential_scope`, `scopes`,
+  `credential_files`, and the two field lists `credential_parts` and
+  `provider_fields`.
+- **Rules** — the format rules for the install command and image reference,
+  the cross-field rules, and the rules every declared field obeys, as pure PHP
+  functions any server-side path can call.
+- **Labels** in English and Italian (`Labels::LOCALES`).
 
-- **Authentication** — `auth_kind`, `auth_registration`, `auth_provider`,
-  `auth_instructions`.
-- **Install** — `install_mode`, `install_remote_url`, `install_command`,
-  `install_image`, `install_env_passthrough`, `credential_delivery`,
-  `credential_env`, `credential_scope`, `scopes`, `credential_files`,
-  `credential_parts`, `provider_fields`.
-
-It does **not** own the *Identity* section — that legitimately diverges
-between apps (the marketplace keys packages by `type` / `name` / `git_url` /
-`tags`; the control-plane keys connectors by `slug` / `display_name` / …), so
-each app keeps its own Identity fields and simply appends the shared sections.
+The *Identity* section is not here: the Marketplace keys a package by
+`type` / `name` / `git_url` / `tags`, the control-plane keys a connector by
+`slug` / `display_name`, so each application keeps its own and appends the two
+shared sections after it.
 
 ## Install
 
-VCS-pinned (like `guidance-studio/filament-tenant-members`) until it is on
-Packagist. In the consuming app's `composer.json`:
+The package is not on Packagist. A consumer requires it from this repository
+and a version tag:
 
 ```jsonc
 "repositories": [
@@ -44,10 +48,12 @@ Packagist. In the consuming app's `composer.json`:
 }
 ```
 
+Requires PHP 8.3+ and `filament/filament` ^5.0.
+
 ## Usage
 
-Both apps build the two sections from a fluent `ConnectorSchemaConfig` and drop
-them into their form after their own Identity fields:
+Build both sections from one `ConnectorSchemaConfig` and put them in the form
+after your own Identity fields:
 
 ```php
 use Cerase\ConnectorSchema\AuthSection;
@@ -55,85 +61,89 @@ use Cerase\ConnectorSchema\ConnectorSchemaConfig;
 use Cerase\ConnectorSchema\InstallSection;
 use Filament\Schemas\Components\Utilities\Get;
 
-// Marketplace: English labels, all four install modes (incl. clone/none),
-// sections shown only for connector packages.
+// Marketplace: English labels, all four install modes (`none` = clone the
+// repo), cross-field rules on, sections shown only for connector packages.
 $config = ConnectorSchemaConfig::make()
     ->locale('en')
     ->installModes(['remote_url', 'command', 'image', 'none'])
+    ->strictCrossField()
     ->visibleWhen(fn (Get $get): bool => $get('type') === 'connector');
 
 return $schema->components([
     // ... the app's own Identity section ...
     AuthSection::make($config),
     InstallSection::make($config),
-    // ... the app's own content tabs ...
 ]);
 ```
 
 ```php
-// Control-plane: Italian labels, three install modes (no repo clone), sections
-// always visible (every record is a connector), and the whole descriptor
-// LOCKED after creation (a custom connector is immutable post-install). See
-// M-CONN-PKG-2.
+// Control-plane: Italian labels, no `none` mode, cross-field rules on, and
+// every descriptor field locked once the connector is created.
 $config = ConnectorSchemaConfig::make()
     ->locale('it')
     ->withoutNoneMode()
+    ->strictCrossField()
     ->disabledWhen(fn (string $operation): bool => $operation !== 'create');
 ```
+
+Every setter returns a new instance, so a base config can be specialised
+without side effects.
 
 ### Configuration
 
 | Method | Purpose | Default |
 | --- | --- | --- |
-| `installModes(array $modes)` | Ordered install-mode keys to offer | `['remote_url','command','image','none']` |
-| `withoutNoneMode()` | Drop the `none` (clone-the-repo) mode | — |
+| `installModes(array $modes)` | Install modes offered, in this order | `['remote_url','command','image','none']` |
+| `withoutNoneMode()` | Drop `none` (clone the repo) from the offered modes | — |
 | `locale(string $locale)` | Label catalog: `en` or `it` | `en` |
-| `visibleWhen(Closure $gate)` | Section-level visibility predicate `fn (Get): bool` | always visible |
-| `disabledWhen(Closure $gate)` | Disable EVERY descriptor field when truthy (passed straight to Filament's `->disabled()`, so it may inject `$operation`/`$get`/`$record`) — the control-plane locks a custom connector after creation | not disabled |
-| `strictCrossField(bool $on = true)` | Enable the OPTIONAL cross-field requireds | `false` (off) |
+| `visibleWhen(Closure $gate)` | Show both sections only when `fn (Get): bool` is true | always visible |
+| `disabledWhen(Closure $gate)` | Disable every descriptor field when truthy; the closure goes straight to Filament's `->disabled()`, so it may inject `$operation`, `$get`, `$record` | editable |
+| `strictCrossField(bool $on = true)` | Make the two cross-field rules required on the form | off |
 
-### Standalone validation rules
+`AuthSection::make($config)` and `InstallSection::make($config)` each return a
+Filament `Section`. The Install section includes the two field-list repeaters,
+also available on their own as `FieldsRepeater::credentialParts($config)` and
+`FieldsRepeater::providerFields($config)`.
 
-The format rules are exposed independently of Filament so server-side paths
-(API / maintainer) can reuse them:
+## Rules
 
 ```php
 use Cerase\ConnectorSchema\Rules;
 
 Rules::COMMAND_REGEX;              // '~^[A-Za-z0-9 \-_./:@%+]+$~'
-Rules::IMAGE_REGEX;               // '~^[A-Za-z0-9._/:@\-+]+$~'
-Rules::commandRule();             // 'regex:~^[A-Za-z0-9 \-_./:@%+]+$~'  (Laravel rule)
-Rules::imageRule();               // 'regex:~^[A-Za-z0-9._/:@\-+]+$~'
-Rules::commandIsValid($string);   // bool
-Rules::imageIsValid($string);     // bool
+Rules::IMAGE_REGEX;                // '~^[A-Za-z0-9._/:@\-+]+$~'
+Rules::commandRule();              // 'regex:…' as a Laravel rule string
+Rules::imageRule();
+Rules::commandIsValid($string);    // bool
+Rules::imageIsValid($string);      // bool
 
-// The strict cross-field rules as a PURE function (server-side enforcement).
-Rules::crossFieldViolations($descriptor); // list<string> of violated codes
-Rules::VIOLATION_CREDENTIAL_ENV_REQUIRED; // 'credential_env_required'
-Rules::VIOLATION_AUTH_PROVIDER_REQUIRED;  // 'auth_provider_required'
+Rules::crossFieldViolations($descriptor);  // list<string> of codes, empty = valid
+Rules::fieldViolations($descriptor);       // list of {code, list, key, detail}
+Rules::fieldViolationMessage($violation, 'it');  // one violation as a sentence
 ```
 
-### Strict cross-field rules (opt-in, OFF by default)
+The command rule allows no quoting, pipes, redirection, substitution or
+chaining, because the command is handed to a sandboxed runner; the image rule
+keeps an image reference from breaking out of the `docker` argument.
 
-Two rules are available but **disabled by default** so that adopting the
-package changes no app's behavior:
+**Cross-field rules** (`crossFieldViolations`, and `->required()` on the form
+when `strictCrossField()` is on):
 
-- `auth_provider` required when `auth_kind === 'oauth2'`;
-- `credential_env` required when `credential_delivery === 'env'`.
+- `auth_provider_required` — `auth_kind` is `oauth2` and `auth_provider` is
+  blank;
+- `credential_env_required` — `credential_delivery` is `env` and
+  `credential_env` is blank.
 
-Enable them on the **form** with `->strictCrossField()` (turned on by
-`M-CONN-GUARD-1`). For **server-side** enforcement (an app's registrar / API
-path), evaluate the identical rules as a pure function via
-`Rules::crossFieldViolations($descriptor)` — it returns the list of violated
-codes (empty = valid), so the form and the server can never drift.
+They are off by default on the form; both applications turn them on.
 
 ## The fields a connector asks for
 
 `credential_parts` are the values one account is made of, typed on the connect
 form; `provider_fields` are the values of the connector's OAuth app beyond its
-client ID and secret, typed once by an administrator. Every field carries
-`help`: one sentence saying where that value is found in the product the
-connector talks to, shown under the field wherever it is typed.
+client ID and secret, typed once by an administrator. Each field is
+`{key, label, help, secret, optional}`; `help` is one sentence saying where the
+value is found in the product the connector talks to, and every form shows it
+under the field.
 
 ```yaml
 credential_parts:
@@ -155,48 +165,60 @@ credential_parts:
     help: Profile → Security → New API key.
 ```
 
-A field may declare `suggest`: a request the platform makes once the fields it
-names are typed, and where in the answer the value sits. One value fills the
-field, several are offered as a choice, none leaves it to the person. It may
-name only fields of the same list declared `secret: false`, never its own.
+`secret` defaults to true and `optional` to false. A field of
+`credential_parts` may declare `suggest`: a request the platform makes once the
+fields it names are typed, and where in the answer the value sits. One value
+fills the field, several are offered as a choice, none leaves it to the person.
+It may name only fields of the same list declared `secret: false`, never its
+own; `provider_fields` may not declare one.
 
-```php
-Rules::fieldViolations($descriptor);        // list of {code, list, key, detail}
-Rules::fieldViolationMessage($violation, 'it');
-CredentialFields::normalize($formState);    // the list as stored
-```
-
-`fieldViolations()` also refuses a connector with `auth_kind: bearer` that
-declares no `credential_parts`: the key the person types is a field like any
-other and says where it is found. The Install section renders both lists as
-repeaters and runs the same rules on save.
+`fieldViolations()` refuses a key that is not a valid variable name or is
+repeated, a missing label or `help`, a non-boolean flag, a malformed
+suggestion, and a connector with `auth_kind: bearer` that declares no
+`credential_parts`. The repeaters run the per-field rules on save; the
+bearer-without-fields rule is enforced by the server-side caller.
+`CredentialFields::normalize($formState)` turns what a form or a YAML/JSON file
+holds into the list as stored.
 
 ## Tests
 
-`./run-tests.sh` runs everything CI can refuse a push on — the vendored-tooling
-pin, the docs-parity guard, the comment convention, the secrets guard, the
-secret scan and the suite — and needs no PHP on the host: it falls back to a
-cached container image carrying `intl`.
-
-The three guard scripts are copies of `cerase-core`'s, written by
-`cerase-core/scripts/sync-tooling.sh` and pinned by `scripts/TOOLING.sha256`.
-Editing a copy here reds the pin check, locally and in CI; the change belongs
-in `cerase-core`.
-
 ```bash
 composer install
-./run-tests.sh                 # everything CI checks
-./run-tests.sh phpunit         # the suite only
+./run-tests.sh                 # everything CI can refuse a push on
+./run-tests.sh phpunit [args]  # the suite only
+./run-tests.sh tooling         # vendored scripts against their pin
+./run-tests.sh docs            # docs parity
+./run-tests.sh comments        # comment convention on the commits about to be pushed
+./run-tests.sh secrets         # secrets guard
+./run-tests.sh gitleaks        # secret scan of the history
 ```
 
-The package suite is pure PHP (rules + config) and runs with plain PHPUnit — no
-Laravel/Filament boot, so `vendor/bin/phpunit` works directly where a host PHP
-with `intl` is installed.
+The suite is plain PHPUnit with no Laravel or Filament boot. Without a host
+PHP, `./run-tests.sh` builds and caches a `php:8.4-cli` image with `intl`
+(name overridable with `CONNECTOR_SCHEMA_TEST_IMAGE`). `gitleaks` must be
+installed for its tier; the runner prints the install command when it is not.
 
-The Filament `Section` builders are behaviorally covered by the **consuming
-apps'** suites (the marketplace publisher-form tests prove byte-for-byte
-parity); the package suite only guarantees the builders parse and expose the
-expected `make(ConnectorSchemaConfig): Section` entrypoint.
+The section builders need a booted Filament app, so their behaviour is tested
+in the consuming applications' form tests; this suite checks the rules, the
+config, and that each builder exposes a static `make(ConnectorSchemaConfig)`.
+
+`scripts/docs-parity.sh`, `scripts/comment-check.sh`, `scripts/secrets-guard.sh`,
+their two helpers and `.github/workflows/dependabot-auto-merge.yml` are copies
+of `cerase-core`'s, written by `cerase-core/scripts/sync-tooling.sh` and pinned
+by `scripts/TOOLING.sha256`. Change them in `cerase-core`; a copy edited here
+fails the pin check.
+
+## CI and releases
+
+`.github/workflows/ci.yml` runs on every push to `main`, every pull request and
+every `v*` tag: the tooling pin, docs parity, comment convention, secrets
+guard and PHPUnit on PHP 8.3 and 8.4, plus a `gitleaks` scan of the full
+history that blocks the push. `dependabot-auto-merge.yml` merges Dependabot's
+patch and minor updates once the other checks pass.
+
+A release is a `vX.Y.Z` tag. The consumers resolve the package by tag through
+Composer, so a change reaches them only after a new tag and a `composer update
+cerase-ai/cerase-connector-schema` in each application.
 
 ## License
 
