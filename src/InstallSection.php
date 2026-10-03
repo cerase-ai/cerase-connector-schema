@@ -19,7 +19,8 @@ use Filament\Schemas\Components\Utilities\Get;
  * fields appear only when the connector authenticates.
  *
  * The install command / image are format-validated at the publishing boundary
- * via {@see Rules} (shell-metachar block / OCI ref). The offered install
+ * via {@see Rules} (shell-metachar block / OCI ref), and the declared fields
+ * by {@see Rules::fieldViolations()}. The offered install
  * modes, labels, section visibility, and the OPTIONAL strict
  * `credential_env`-required-for-env rule come from the config; every field
  * name is part of the shared descriptor contract.
@@ -106,6 +107,11 @@ final class InstallSection
                         Textarea::make('template')->required()->rows(3)->label($config->label('credential.files.template.label')),
                     ])
                     ->default([]),
+                // The values a person types to connect an account, and the
+                // OAuth app's own beyond client ID and secret: each with the
+                // sentence saying where its value is found.
+                FieldsRepeater::credentialParts($config),
+                FieldsRepeater::providerFields($config),
         ];
 
         // The control-plane locks the descriptor after creation.

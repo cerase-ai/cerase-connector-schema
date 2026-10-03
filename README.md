@@ -22,7 +22,8 @@ It owns the parts of the descriptor that are genuinely shared:
   `auth_instructions`.
 - **Install** — `install_mode`, `install_remote_url`, `install_command`,
   `install_image`, `install_env_passthrough`, `credential_delivery`,
-  `credential_env`, `credential_scope`, `scopes`, `credential_files`.
+  `credential_env`, `credential_scope`, `scopes`, `credential_files`,
+  `credential_parts`, `provider_fields`.
 
 It does **not** own the *Identity* section — that legitimately diverges
 between apps (the marketplace keys packages by `type` / `name` / `git_url` /
@@ -39,7 +40,7 @@ Packagist. In the consuming app's `composer.json`:
     { "type": "vcs", "url": "https://github.com/cerase-ai/cerase-connector-schema.git" }
 ],
 "require": {
-    "cerase-ai/cerase-connector-schema": "^0.1"
+    "cerase-ai/cerase-connector-schema": "^0.2"
 }
 ```
 
@@ -125,6 +126,50 @@ Enable them on the **form** with `->strictCrossField()` (turned on by
 path), evaluate the identical rules as a pure function via
 `Rules::crossFieldViolations($descriptor)` — it returns the list of violated
 codes (empty = valid), so the form and the server can never drift.
+
+## The fields a connector asks for
+
+`credential_parts` are the values one account is made of, typed on the connect
+form; `provider_fields` are the values of the connector's OAuth app beyond its
+client ID and secret, typed once by an administrator. Every field carries
+`help`: one sentence saying where that value is found in the product the
+connector talks to, shown under the field wherever it is typed.
+
+```yaml
+credential_parts:
+  - key: INSTANCE_URL
+    label: Instance URL
+    secret: false
+    help: The address you open the app at, for example https://acme.example.com.
+  - key: DATABASE
+    label: Database
+    secret: false
+    help: Shown on the app's login page, under the password.
+    suggest:
+      method: POST                      # GET (default) or POST
+      url: "{INSTANCE_URL}/api/databases"
+      body: {params: {}}                # POST only; its strings may name fields
+      value_at: result                  # dot path into the JSON answer; * walks a list
+  - key: API_KEY
+    label: API key
+    help: Profile → Security → New API key.
+```
+
+A field may declare `suggest`: a request the platform makes once the fields it
+names are typed, and where in the answer the value sits. One value fills the
+field, several are offered as a choice, none leaves it to the person. It may
+name only fields of the same list declared `secret: false`, never its own.
+
+```php
+Rules::fieldViolations($descriptor);        // list of {code, list, key, detail}
+Rules::fieldViolationMessage($violation, 'it');
+CredentialFields::normalize($formState);    // the list as stored
+```
+
+`fieldViolations()` also refuses a connector with `auth_kind: bearer` that
+declares no `credential_parts`: the key the person types is a field like any
+other and says where it is found. The Install section renders both lists as
+repeaters and runs the same rules on save.
 
 ## Tests
 

@@ -37,4 +37,17 @@ final class BuilderSmokeTest extends TestCase
             );
         }
     }
+
+    public function test_the_field_repeaters_load_and_take_the_config(): void
+    {
+        foreach (['credentialParts', 'providerFields'] as $method) {
+            $builder = new ReflectionMethod(\Cerase\ConnectorSchema\FieldsRepeater::class, $method);
+            self::assertTrue($builder->isStatic() && $builder->isPublic(), "FieldsRepeater::{$method} must be public static");
+            self::assertSame(
+                \Cerase\ConnectorSchema\ConnectorSchemaConfig::class,
+                (string) $builder->getParameters()[0]->getType(),
+            );
+            self::assertSame(\Filament\Forms\Components\Repeater::class, (string) $builder->getReturnType());
+        }
+    }
 }
