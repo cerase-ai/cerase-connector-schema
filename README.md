@@ -27,6 +27,9 @@ management plane.
 - **Rules** — the format rules for the install command and image reference,
   the cross-field rules, and the rules every declared field obeys, as pure PHP
   functions any server-side path can call.
+- **Approval declaration** — the shape of a connector's `approval_display`
+  block, which says how its calls read to the person asked to approve them
+  (`ApprovalDeclaration`).
 - **Labels** in English and Italian (`Labels::LOCALES`).
 
 The *Identity* section is not here: the Marketplace keys a package by
@@ -44,7 +47,7 @@ and a version tag:
     { "type": "vcs", "url": "https://github.com/cerase-ai/cerase-connector-schema.git" }
 ],
 "require": {
-    "cerase-ai/cerase-connector-schema": "^0.2"
+    "cerase-ai/cerase-connector-schema": "^0.3"
 }
 ```
 
@@ -180,6 +183,36 @@ bearer-without-fields rule is enforced by the server-side caller.
 `CredentialFields::normalize($formState)` turns what a form or a YAML/JSON file
 holds into the list as stored.
 
+## The approval declaration
+
+`approval_display` is the part of a descriptor that says how the connector's
+calls read in an approval: per tool, the action in words (`sentences`), the
+same action done (`outcomes`) and what approving does (`approving`), plus the
+words for argument keys, choices, record names, recipients and attachments.
+The class docblock of `src/ApprovalDeclaration.php` shows every key with an
+example.
+
+```php
+use Cerase\ConnectorSchema\ApprovalDeclaration;
+
+ApprovalDeclaration::violations($block);   // list<string>, empty = valid; null is valid
+ApprovalDeclaration::missingFor($block, ['send_email', 'draft_email']);
+                                           // the tools lacking a sentence or what approving does
+ApprovalDeclaration::KEYS;                 // the keys a declaration may carry
+ApprovalDeclaration::RECIPIENT_ROLES;      // to, cc, bcc
+```
+
+`violations()` returns one sentence per defect, each naming the key, so a
+caller that refuses the block can throw with the first or show them all.
+`missingFor()` takes the names of the tools that ask approval, that is every
+write, and returns those the block does not cover with both a `sentences` and
+an `approving` entry, in the order given. An entry keyed by the argument that
+names the operation, as Twenty's `execute_tool: {toolName: {...}}`, covers its
+tool when it words at least one operation.
+
+`tests/fixtures/approval-declarations.yaml` is a copy of every declaration in
+cerase-core's connector catalogue, and the suite requires each to be valid.
+
 ## Tests
 
 ```bash
@@ -200,7 +233,8 @@ installed for its tier; the runner prints the install command when it is not.
 
 The section builders need a booted Filament app, so their behaviour is tested
 in the consuming applications' form tests; this suite checks the rules, the
-config, and that each builder exposes a static `make(ConnectorSchemaConfig)`.
+approval declaration, the config, and that each builder exposes a static
+`make(ConnectorSchemaConfig)`.
 
 `scripts/docs-parity.sh`, `scripts/comment-check.sh`, `scripts/secrets-guard.sh`,
 their two helpers and `.github/workflows/dependabot-auto-merge.yml` are copies

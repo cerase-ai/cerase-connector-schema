@@ -1,0 +1,284 @@
+# Every approval declaration in cerase-core's connector catalogue
+# (agent-runtime/mcp-registry/catalog.yaml), copied verbatim without its comment
+# lines. The Marketplace's seed catalogue carries the same blocks. Tests read
+# this copy rather than the sibling checkout, so a declaration added there is
+# copied here too, and ApprovalDeclarationTest must accept it.
+entries:
+- slug: google-workspace
+  approval_display:
+    sentences:
+      uploadFile: Caricare un file sul tuo Drive
+      addPermission: Condividere un file del tuo Drive con altre persone
+      createGoogleDoc: Creare un documento Google nel tuo Drive
+      updateGoogleDoc: Modificare un documento Google
+      insertText: Inserire del testo in un documento Google
+      copyFile: Copiare un file del tuo Drive
+- slug: gmail
+  approval_display:
+    sentences:
+      send_email: Inviare un'email dalla tua casella
+      draft_email: Preparare una bozza nella tua casella
+      modify_email: Cambiare le etichette di un'email
+      batch_modify_emails: Cambiare le etichette di più email
+      delete_email: Eliminare un'email
+      batch_delete_emails: Eliminare più email
+      create_label: Creare un'etichetta
+      update_label: Modificare un'etichetta
+      get_or_create_label: Creare un'etichetta, se non c'è già
+      delete_label: Eliminare un'etichetta
+      create_filter: Creare un filtro
+      create_filter_from_template: Creare un filtro da un modello
+      delete_filter: Eliminare un filtro
+    outcomes:
+      send_email: L'email è stata inviata
+      draft_email: La bozza è stata preparata
+      modify_email: Le etichette dell'email sono state cambiate
+      batch_modify_emails: Le etichette delle email sono state cambiate
+      delete_email: L'email è stata eliminata
+      batch_delete_emails: Le email sono state eliminate
+      create_label: L'etichetta è stata creata
+      update_label: L'etichetta è stata modificata
+      get_or_create_label: L'etichetta è pronta
+      delete_label: L'etichetta è stata eliminata
+      create_filter: Il filtro è stato creato
+      create_filter_from_template: Il filtro è stato creato
+      delete_filter: Il filtro è stato eliminato
+    approving:
+      send_email: Invia subito un'email dalla tua casella Gmail
+      draft_email: Salva una bozza nella tua casella Gmail (non viene inviata)
+    labels:
+      to: A
+      cc: Cc
+      bcc: Ccn
+      from: Mittente
+      subject: Oggetto
+      body: Testo
+      htmlBody: Testo (HTML)
+      mimeType: Formato
+      attachments: Allegati
+      threadId: Conversazione
+      inReplyTo: In risposta a
+      messageId: Email
+      messageIds: Email
+      labelIds: Etichette da aggiungere
+      addLabelIds: Etichette da aggiungere
+      removeLabelIds: Etichette da togliere
+      batchSize: Quante per volta
+      id: Etichetta
+      name: Nome
+      messageListVisibility: Nell'elenco dei messaggi
+      labelListVisibility: Nell'elenco delle etichette
+      filterId: Filtro
+      query: Ricerca
+      negatedQuery: Escludi
+      hasAttachment: Con allegati
+      forward: Inoltra a
+      template: Modello
+    choices:
+    - fields:
+      - labelIds
+      - addLabelIds
+      - removeLabelIds
+      values:
+        INBOX: Posta in arrivo
+        UNREAD: Da leggere
+        STARRED: Speciali
+        IMPORTANT: Importanti
+        SENT: Inviati
+        DRAFT: Bozze
+        SPAM: Spam
+        TRASH: Cestino
+        CATEGORY_PERSONAL: Principale
+        CATEGORY_SOCIAL: Social
+        CATEGORY_PROMOTIONS: Promozioni
+        CATEGORY_UPDATES: Aggiornamenti
+        CATEGORY_FORUMS: Forum
+    record_names:
+      name:
+      - '{Subject} — {From}'
+      - '(senza oggetto) — {From}'
+      - '{Name}'
+      text_answers:
+      - search_emails
+      - list_email_labels
+      - create_label
+      - update_label
+      - get_or_create_label
+    recipients:
+      send_email: {to: to, cc: cc, bcc: bcc}
+      draft_email: {to: to, cc: cc, bcc: bcc}
+    attachments:
+      send_email: attachments
+      draft_email: attachments
+    failures:
+      - 'Error: '
+      - 'Failed to download attachment: '
+- slug: twenty
+  approval_display:
+    sentences:
+      execute_tool:
+        toolName:
+          create_one_note: Aggiungere una nota
+          create_one_note_target: Collegare una nota a un record
+          create_one_task: Creare un'attività
+          create_one_task_target: Collegare un'attività a un record
+          create_one_company: Creare un'azienda
+          create_one_person: Creare una persona
+          create_one_opportunity: Creare un'opportunità
+          update_one_note: Modificare una nota
+          update_one_task: Modificare un'attività
+          update_one_company: Modificare un'azienda
+          update_one_person: Modificare una persona
+          update_one_opportunity: Modificare un'opportunità
+          delete_one_note: Eliminare una nota
+          delete_one_task: Eliminare un'attività
+          delete_one_company: Eliminare un'azienda
+          delete_one_person: Eliminare una persona
+          delete_one_opportunity: Eliminare un'opportunità
+          create_calendar_event: Creare un evento in calendario
+          create_complete_workflow: Creare un flusso di lavoro
+          create_complete_dashboard: Creare una dashboard
+          create_view: Creare una vista
+          create_object_metadata: Creare un tipo di record
+          create_field_metadata: Aggiungere un campo a un tipo di record
+          create_webhook: Creare un webhook
+          create_file_upload: Caricare un file
+          complete_file_upload: Caricare un file
+          send_email: Inviare un'email
+          draft_email: Preparare la bozza di un'email
+          save_campaign: Salvare una campagna
+          create_one_*: Creare un record
+          create_many_*: Creare più record
+          update_one_*: Modificare un record
+          update_many_*: Modificare più record
+          upsert_many_*: Creare o modificare più record
+          delete_one_*: Eliminare un record
+          delete_many_*: Eliminare più record
+          create_*: Creare un elemento della configurazione
+          update_*: Modificare un elemento della configurazione
+          upsert_*: Creare o modificare un elemento della configurazione
+          delete_*: Eliminare un elemento della configurazione
+          activate_*: Attivare un flusso di lavoro
+          deactivate_*: Disattivare un flusso di lavoro
+          app_*: Eseguire una funzione del workspace
+          '*': Eseguire un'operazione
+    outcomes:
+      execute_tool:
+        toolName:
+          create_one_note: La nota è stata aggiunta
+          create_one_note_target: La nota è stata collegata
+          create_one_task: L'attività è stata creata
+          create_one_task_target: L'attività è stata collegata
+          create_one_company: L'azienda è stata creata
+          create_one_person: La persona è stata creata
+          create_one_opportunity: L'opportunità è stata creata
+          send_email: L'email è stata inviata
+          draft_email: La bozza dell'email è stata preparata
+          create_one_*: Il record è stato creato
+          create_many_*: I record sono stati creati
+          update_one_*: Il record è stato modificato
+          update_many_*: I record sono stati modificati
+          upsert_many_*: I record sono stati creati o modificati
+          delete_one_*: Il record è stato eliminato
+          delete_many_*: I record sono stati eliminati
+          create_*: L'elemento è stato creato
+          update_*: L'elemento è stato modificato
+          delete_*: L'elemento è stato eliminato
+          activate_*: Il flusso di lavoro è stato attivato
+          deactivate_*: Il flusso di lavoro è stato disattivato
+          '*': L'operazione è stata eseguita
+    unwrap:
+    - arguments
+    labels:
+      id: Record
+      name: Nome
+      title: Titolo
+      markdown: Testo
+      blocknote: Testo (formato dell'editor)
+      subject: Oggetto
+      body: Testo
+      noteId: Nota
+      taskId: Attività
+      targetCompanyId: Azienda
+      targetPersonId: Persona
+      targetOpportunityId: Opportunità
+      personId: Persona
+      pointOfContactId: Referente
+      opportunityId: Opportunità
+      companyId: Azienda
+      assigneeId: Assegnata a
+      firstName: Nome
+      lastName: Cognome
+      primaryEmail: Email
+      primaryPhoneNumber: Telefono
+      primaryLinkUrl: Sito web
+      jobTitle: Ruolo
+      city: Città
+      dueAt: Scadenza
+      closeDate: Data di chiusura
+      status: Stato
+      stage: Fase
+      amount: Importo
+      annualRecurringRevenue: Fatturato ricorrente annuo
+      employees: Dipendenti
+      position: Posizione nell'elenco
+      select: Campi da leggere
+      limit: Quanti al massimo
+      toolName: Operazione
+    named_ids:
+      noteId: note
+      taskId: task
+      companyId: company
+      targetCompanyId: company
+      personId: person
+      targetPersonId: person
+      pointOfContactId: person
+      opportunityId: opportunity
+      targetOpportunityId: opportunity
+    linked_to:
+    - targetCompanyId
+    - targetPersonId
+    - targetOpportunityId
+    amounts_in_micros:
+      amountMicros: currencyCode
+    choices:
+    - fields:
+      - stage
+      values:
+        NEW: Nuova
+        SCREENING: In valutazione
+        MEETING: Incontro
+        PROPOSAL: Proposta
+        CUSTOMER: Cliente
+    - fields:
+      - status
+      values:
+        TODO: Da fare
+        IN_PROGRESS: In corso
+        DONE: Fatta
+    record_names:
+      id:
+      - id
+      - recordId
+      name:
+      - '{displayName}'
+      - '{name}'
+      - '{title}'
+    recipients:
+      execute_tool:
+        toolName:
+          send_email: {to: arguments.recipients.to, cc: arguments.recipients.cc, bcc: arguments.recipients.bcc}
+          draft_email: {to: arguments.recipients.to, cc: arguments.recipients.cc, bcc: arguments.recipients.bcc}
+- slug: cerase-email
+  approval_display:
+    outcomes:
+      email_send: L'email è stata inviata
+    approving:
+      email_send: Invia subito un'email dalla casella dell'assistente
+    labels:
+      subject: Oggetto
+      body: Testo
+    recipients:
+      email_send: {to: to, cc: cc}
+    attachments:
+      email_send: attachments
