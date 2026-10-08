@@ -30,6 +30,9 @@ management plane.
 - **Approval declaration** — the shape of a connector's `approval_display`
   block, which says how its calls read to the person asked to approve them
   (`ApprovalDeclaration`).
+- **Batch limits** — the shape of a connector's `batch_limits` block, which
+  says which argument of a tool is a list and the most items one call takes
+  (`BatchLimits`).
 - **Labels** in English and Italian (`Labels::LOCALES`).
 
 The *Identity* section is not here: the Marketplace keys a package by
@@ -47,7 +50,7 @@ and a version tag:
     { "type": "vcs", "url": "https://github.com/cerase-ai/cerase-connector-schema.git" }
 ],
 "require": {
-    "cerase-ai/cerase-connector-schema": "^0.3"
+    "cerase-ai/cerase-connector-schema": "^0.4"
 }
 ```
 
@@ -213,6 +216,33 @@ tool when it words at least one operation.
 `tests/fixtures/approval-declarations.yaml` is a copy of every declaration in
 cerase-core's connector catalogue, and the suite requires each to be valid.
 
+## The batch limits
+
+`batch_limits` says, per tool, which arguments hold a list of records and the
+most items one call of the tool takes. The control-plane copies it onto the
+connector's row; the gateway splits a call over a limit into parts of that
+size, puts them to the person as one approval listing the parts, and runs them
+in order, stopping at the first that fails.
+
+```yaml
+batch_limits:
+  manage_crm_objects:            # a tool of the connector
+    createRequest.objects: 10    # a list, by its path in the call,
+    updateRequest.objects: 10    # and the most items one call takes
+```
+
+```php
+use Cerase\ConnectorSchema\BatchLimits;
+
+BatchLimits::violations($block);   // list<string>, empty = valid; null is valid
+```
+
+A path is keys of the call's arguments joined by dots, never a position in a
+list, and a limit is a whole number of at least 1. A call carrying items in two
+of one tool's lists cannot be split, since every part would repeat the other
+list, so the gateway refuses it before anybody is asked and says to send the
+lists in separate calls.
+
 ## Tests
 
 ```bash
@@ -233,7 +263,7 @@ installed for its tier; the runner prints the install command when it is not.
 
 The section builders need a booted Filament app, so their behaviour is tested
 in the consuming applications' form tests; this suite checks the rules, the
-approval declaration, the config, and that each builder exposes a static
+approval declaration, the batch limits, the config, and that each builder exposes a static
 `make(ConnectorSchemaConfig)`.
 
 `scripts/docs-parity.sh`, `scripts/comment-check.sh`, `scripts/secrets-guard.sh`,
