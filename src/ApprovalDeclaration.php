@@ -35,6 +35,9 @@ namespace Cerase\ConnectorSchema;
  *         id: [id, recordId]
  *         name: ['{displayName}', '{name}']
  *         text_answers: [search_emails]
+ *         group:            # what a long list of them is summarised by, first rule that fits
+ *           - {label: Inviti del calendario, field: Subject, match: '^(invitation|invito)\s*:'}
+ *           - {label: '{From}'}
  *       recipients:         # which arguments of a tool that sends a mail are To, Cc and Bcc,
  *         send_email: {to: to, cc: cc, bcc: bcc}   # by their path in the call; per tool, or
  *         execute_tool:                            # by the argument naming the operation
@@ -60,7 +63,10 @@ final class ApprovalDeclaration
     public const RECIPIENT_ROLES = ['to', 'cc', 'bcc'];
 
     /** The keys of `record_names`. */
-    public const RECORD_NAME_KEYS = ['id', 'name', 'text_answers'];
+    public const RECORD_NAME_KEYS = ['id', 'name', 'text_answers', 'group'];
+
+    /** The keys of one rule of `record_names.group`. */
+    public const GROUP_RULE_KEYS = ['label', 'field', 'match'];
 
     /**
      * Every reason the block cannot be read, one sentence each, naming the
@@ -363,9 +369,55 @@ final class ApprovalDeclaration
 
             return;
         }
-        foreach (self::RECORD_NAME_KEYS as $key) {
+        foreach (['id', 'name', 'text_answers'] as $key) {
             if (isset($names[$key])) {
                 self::names($names[$key], "approval_display.record_names.{$key}", $found);
+            }
+        }
+        if (isset($names['group'])) {
+            self::groups($names['group'], $found);
+        }
+    }
+
+    /**
+     * What a long list of the connector's records is summarised by on an
+     * approval: rules tried in order, the first that fits a record giving its
+     * group. A rule is a label, filled from the record's fields; one with a
+     * field and a pattern fits only a record whose field matches the pattern,
+     * without regard to case, and its label may also name the pattern's named
+     * groups. The gateway runs the pattern with Python's `re`, so it keeps to
+     * the syntax PCRE and Python share, with named groups as `(?P<name>…)`.
+     *
+     * @param  list<string>  $found
+     */
+    private static function groups(mixed $rules, array &$found): void
+    {
+        if (! is_array($rules) || ! array_is_list($rules) || $rules === []) {
+            $found[] = 'approval_display.record_names.group must be a list of rules, each a label with an optional field and pattern';
+
+            return;
+        }
+        foreach ($rules as $i => $rule) {
+            $where = "approval_display.record_names.group.{$i}";
+            if (! is_array($rule) || ($rule !== [] && array_is_list($rule))
+                || array_diff(array_keys($rule), self::GROUP_RULE_KEYS) !== []
+                || ! is_string($rule['label'] ?? null) || trim($rule['label']) === '') {
+                $found[] = "{$where} must be a label with an optional field and pattern";
+
+                continue;
+            }
+            $field = $rule['field'] ?? null;
+            $match = $rule['match'] ?? null;
+            if (($field === null) !== ($match === null)) {
+                $found[] = "{$where} names a pattern and a field together, or neither";
+
+                continue;
+            }
+            if ($field !== null && (! is_string($field) || trim($field) === '')) {
+                $found[] = "{$where}.field must name a field of the record";
+            }
+            if ($match !== null && (! is_string($match) || trim($match) === '' || @preg_match("\x01{$match}\x01iu", '') === false)) {
+                $found[] = "{$where}.match is not a pattern";
             }
         }
     }

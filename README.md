@@ -191,7 +191,8 @@ holds into the list as stored.
 `approval_display` is the part of a descriptor that says how the connector's
 calls read in an approval: per tool, the action in words (`sentences`), the
 same action done (`outcomes`) and what approving does (`approving`), plus the
-words for argument keys, choices, record names, recipients and attachments.
+words for argument keys, choices, record names and what a long list of records is
+summarised by, recipients and attachments.
 The class docblock of `src/ApprovalDeclaration.php` shows every key with an
 example.
 

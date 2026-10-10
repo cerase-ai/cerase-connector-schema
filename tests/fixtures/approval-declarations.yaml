@@ -104,6 +104,20 @@ entries:
       - create_label
       - update_label
       - get_or_create_label
+      group:
+      - label: Risposte agli inviti del calendario
+        field: Subject
+        match: '^(accepted|declined|tentatively accepted|tentative|new time proposed|accettat[oa]|rifiutat[oa]|accettat[oa] provvisoriamente|provvisori[oa]|nuovo orario proposto)( with note| con nota)?\s*:'
+      - label: Inviti del calendario
+        field: Subject
+        match: '^(invitation|updated invitation|invito|invito aggiornato|canceled event|cancelled event|canceled|cancelled|evento annullato|annullat[oa])( with note| con nota)?\s*:'
+      - label: Risposte automatiche
+        field: Subject
+        match: '^(automatic reply|auto-reply|autoreply|out of office|risposta automatica|fuori sede|fuori ufficio)\b'
+      - label: Notifiche di {service}
+        field: From
+        match: '\((via )?(?P<service>[^()<>"]{2,40})\)"?\s*<[^@>]*(no-?reply|notif|comments|shares)[^@>]*@'
+      - label: '{From}'
     recipients:
       send_email: {to: to, cc: cc, bcc: bcc}
       draft_email: {to: to, cc: cc, bcc: bcc}
