@@ -63,7 +63,7 @@ final class ApprovalDeclarationTest extends TestCase
             'dates' => ['hs_timestamp'],
             'link' => ['type' => 'objectType'],
             'record_names' => [
-                'id' => ['id'], 'name' => ['{name}'], 'text_answers' => ['search_emails'],
+                'id' => ['id'], 'name' => ['{name}'], 'text_answers' => ['search_emails'], 'date' => ['{Date}'],
                 'group' => [
                     ['label' => 'Inviti del calendario', 'field' => 'Subject', 'match' => '^(invitation|invito)\\s*:'],
                     ['label' => 'Notifiche di {service}', 'field' => 'From', 'match' => '\\((?P<service>[^()]+)\\)\\s*<'],
@@ -120,8 +120,9 @@ final class ApprovalDeclarationTest extends TestCase
                 'approval_display.choices.0.fields must be a list of names'],
             'a choice whose values are not words' => [['choices' => [['fields' => ['stage'], 'values' => ['NEW' => 1]]]],
                 'approval_display.choices.0.values must map a name to words'],
-            'record names under another key' => [['record_names' => ['fields' => ['id']]], 'approval_display.record_names takes id, name, text_answers, group'],
-            'record names as a list' => [['record_names' => [['id']]], 'approval_display.record_names takes id, name, text_answers, group'],
+            'record names under another key' => [['record_names' => ['fields' => ['id']]], 'approval_display.record_names takes id, name, text_answers, date, group'],
+            'record names as a list' => [['record_names' => [['id']]], 'approval_display.record_names takes id, name, text_answers, date, group'],
+            'a date that is not a list' => [['record_names' => ['date' => '{Date}']], 'approval_display.record_names.date must be a list of names'],
             'groups as a map' => [['record_names' => ['group' => ['label' => '{From}']]],
                 'approval_display.record_names.group must be a list of rules, each a label with an optional field and pattern'],
             'a group without a label' => [['record_names' => ['group' => [['field' => 'Subject', 'match' => '^x']]]],

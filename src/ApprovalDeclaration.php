@@ -35,6 +35,7 @@ namespace Cerase\ConnectorSchema;
  *         id: [id, recordId]
  *         name: ['{displayName}', '{name}']
  *         text_answers: [search_emails]
+ *         date: ['{Date}']  # when a record was made or sent, shown beside its name
  *         group:            # what a long list of them is summarised by, first rule that fits
  *           - {label: Inviti del calendario, field: Subject, match: '^(invitation|invito)\s*:'}
  *           - {label: '{From}'}
@@ -63,7 +64,7 @@ final class ApprovalDeclaration
     public const RECIPIENT_ROLES = ['to', 'cc', 'bcc'];
 
     /** The keys of `record_names`. */
-    public const RECORD_NAME_KEYS = ['id', 'name', 'text_answers', 'group'];
+    public const RECORD_NAME_KEYS = ['id', 'name', 'text_answers', 'date', 'group'];
 
     /** The keys of one rule of `record_names.group`. */
     public const GROUP_RULE_KEYS = ['label', 'field', 'match'];
@@ -369,7 +370,7 @@ final class ApprovalDeclaration
 
             return;
         }
-        foreach (['id', 'name', 'text_answers'] as $key) {
+        foreach (['id', 'name', 'text_answers', 'date'] as $key) {
             if (isset($names[$key])) {
                 self::names($names[$key], "approval_display.record_names.{$key}", $found);
             }

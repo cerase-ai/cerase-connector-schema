@@ -104,6 +104,8 @@ entries:
       - create_label
       - update_label
       - get_or_create_label
+      date:
+      - '{Date}'
       group:
       - label: Risposte agli inviti del calendario
         field: Subject
