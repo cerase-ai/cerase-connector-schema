@@ -83,6 +83,8 @@ final class ApprovalDeclarationTest extends TestCase
             ],
             'attachments' => ['send_email' => 'attachments'],
             'failures' => ['Error: '],
+            'item_failures' => ['items' => ['createResults.results', 'updateResults.results'], 'error' => 'error', 'name' => 'objectId'],
+            'plurals' => ["Creare un'azienda" => 'Creare {count} aziende'],
         ]));
     }
 
@@ -103,7 +105,8 @@ final class ApprovalDeclarationTest extends TestCase
             'a sentence, not a map' => ['Inviare', 'approval_display must be a map, got string'],
             'an unknown key' => [['wording' => []],
                 'approval_display has unknown key(s) [wording] — it takes sentences, outcomes, approving, labels, unwrap, '
-                .'amounts_in_micros, choices, named_ids, linked_to, dates, link, record_names, recipients, attachments, failures'],
+                .'amounts_in_micros, choices, named_ids, linked_to, dates, link, record_names, recipients, attachments, failures, '
+                .'item_failures, plurals'],
             'sentences a list' => [['sentences' => ['Inviare']], 'approval_display.sentences must map a tool to a sentence or to rules'],
             'an empty sentence' => [['sentences' => ['send_email' => ' ']], 'approval_display.sentences.send_email is empty'],
             'what approving does as a list' => [['approving' => ['draft_email' => ['x', 'y']]], 'approval_display.approving.draft_email must be a sentence or rules'],
@@ -166,6 +169,17 @@ final class ApprovalDeclarationTest extends TestCase
             'attachments naming no argument' => [['attachments' => ['email_send' => ' ']], 'approval_display.attachments.email_send must name an argument of the tool'],
             'failures as a map' => [['failures' => ['error' => 'Error: ']], 'approval_display.failures must be a list of the openings of a failed answer'],
             'a blank failure' => [['failures' => ['Error: ', '']], 'approval_display.failures must be a list of the openings of a failed answer'],
+            'item failures without their lists' => [['item_failures' => ['error' => 'error']],
+                'approval_display.item_failures must be {items, error} with name optional: the lists of item answers by path, and the key holding an item\'s error'],
+            'item failures with a key nobody reads' => [['item_failures' => ['items' => ['results'], 'error' => 'error', 'status' => 'failed']],
+                'approval_display.item_failures must be {items, error} with name optional: the lists of item answers by path, and the key holding an item\'s error'],
+            'item failures at a path that is not one' => [['item_failures' => ['items' => ['results[0]'], 'error' => 'error']],
+                'approval_display.item_failures.items must be a list of paths of keys joined by dots'],
+            'item failures with a blank error key' => [['item_failures' => ['items' => ['results'], 'error' => ' ']],
+                'approval_display.item_failures.error must name the key of an item answer'],
+            'plurals as a list' => [['plurals' => ['Creare {count} aziende']], 'approval_display.plurals must map a sentence to how it reads for {count} records'],
+            'a plural without its count' => [['plurals' => ["Creare un'azienda" => 'Creare aziende']],
+                'approval_display.plurals must map a sentence to how it reads for {count} records'],
         ];
     }
 
@@ -201,6 +215,7 @@ final class ApprovalDeclarationTest extends TestCase
         self::assertSame([
             'sentences', 'outcomes', 'approving', 'labels', 'unwrap', 'amounts_in_micros', 'choices',
             'named_ids', 'linked_to', 'dates', 'link', 'record_names', 'recipients', 'attachments', 'failures',
+            'item_failures', 'plurals',
         ], ApprovalDeclaration::KEYS);
         self::assertSame(['to', 'cc', 'bcc'], ApprovalDeclaration::RECIPIENT_ROLES);
     }

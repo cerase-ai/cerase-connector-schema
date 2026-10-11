@@ -55,6 +55,12 @@ namespace Cerase\ConnectorSchema;
  *         send_email: attachments
  *       failures:           # the openings with which the connector's answers say a call
  *         - 'Error: '       # failed without marking them errors
+ *       item_failures:      # where a batch answer reports an item that failed while the call
+ *         items: [createResults.results, updateResults.results]  # succeeded: the lists of
+ *         error: error      # item answers by path, the key holding an item's error,
+ *         name: objectId    # and the key naming the item
+ *       plurals:            # a sentence, and how it reads for {count} records of a batch
+ *         "Creare un'azienda": 'Creare {count} aziende'
  *
  * Every key is optional, and a key left empty is not declared. A connector
  * that declares nothing reads with the platform's generic sentences.
@@ -65,8 +71,13 @@ final class ApprovalDeclaration
     public const KEYS = [
         'sentences', 'outcomes', 'approving', 'labels', 'unwrap', 'amounts_in_micros', 'choices',
         'named_ids', 'linked_to', 'dates', 'link', 'record_names', 'recipients',
-        'attachments', 'failures',
+        'attachments', 'failures', 'item_failures', 'plurals',
     ];
+
+    /** The keys of `item_failures`, the ones it cannot do without first. */
+    public const ITEM_FAILURE_KEYS = ['items', 'error', 'name'];
+
+    public const ITEM_FAILURE_REQUIRED = ['items', 'error'];
 
     /** The roles a recipient can have, in the order a person reads them. */
     public const RECIPIENT_ROLES = ['to', 'cc', 'bcc'];
@@ -138,6 +149,16 @@ final class ApprovalDeclaration
         }
         if (isset($block['record_names'])) {
             self::recordNames($block['record_names'], $found);
+        }
+        if (isset($block['item_failures'])) {
+            self::itemFailures($block['item_failures'], $found);
+        }
+        if (isset($block['plurals'])) {
+            $plurals = $block['plurals'];
+            if (! is_array($plurals) || $plurals === [] || array_is_list($plurals)
+                || array_filter($plurals, static fn (mixed $p): bool => ! is_string($p) || ! str_contains($p, '{count}')) !== []) {
+                $found[] = 'approval_display.plurals must map a sentence to how it reads for {count} records';
+            }
         }
 
         return array_values(array_unique($found));
@@ -375,6 +396,36 @@ final class ApprovalDeclaration
      *
      * @param  list<string>  $found
      */
+    /**
+     * Where a batch answer reports an item that failed while the call itself
+     * succeeded: HubSpot answers a write of many companies with a success, and
+     * the company it refused inside, under `results[].error`.
+     *
+     * @param  list<string>  $found
+     */
+    private static function itemFailures(mixed $block, array &$found): void
+    {
+        $shape = 'approval_display.item_failures must be {items, error} with name optional: '
+            .'the lists of item answers by path, and the key holding an item\'s error';
+        if (! is_array($block) || array_is_list($block)
+            || array_diff(array_keys($block), self::ITEM_FAILURE_KEYS) !== []
+            || array_diff(self::ITEM_FAILURE_REQUIRED, array_keys($block)) !== []) {
+            $found[] = $shape;
+
+            return;
+        }
+        $items = $block['items'];
+        if (! is_array($items) || $items === [] || ! array_is_list($items)
+            || array_filter($items, static fn (mixed $p): bool => ! is_string($p) || preg_match(BatchLimits::PATH_REGEX, $p) !== 1) !== []) {
+            $found[] = 'approval_display.item_failures.items must be a list of paths of keys joined by dots';
+        }
+        foreach (['error', 'name'] as $key) {
+            if (array_key_exists($key, $block) && (! is_string($block[$key]) || trim($block[$key]) === '')) {
+                $found[] = "approval_display.item_failures.{$key} must name the key of an item answer";
+            }
+        }
+    }
+
     private static function recordNames(mixed $names, array &$found): void
     {
         if (! is_array($names) || ($names !== [] && array_is_list($names))
