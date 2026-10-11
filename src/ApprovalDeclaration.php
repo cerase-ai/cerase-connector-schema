@@ -39,6 +39,14 @@ namespace Cerase\ConnectorSchema;
  *         group:            # what a long list of them is summarised by, first rule that fits
  *           - {label: Inviti del calendario, field: Subject, match: '^(invitation|invito)\s*:'}
  *           - {label: '{From}'}
+ *         read:             # how a write's ids are named when no answer did, read before it is asked
+ *           - tools: [validate_write]
+ *             ids: [record_ids]                 # the arguments holding the ids
+ *             kind: '{model}'                   # the argument saying what kind of record they are
+ *             with: search_records              # the read-only tool that returns them
+ *             arguments: {model: '{model}', domain: [[id, in, '{ids}']], fields: '{fields}'}
+ *             fields: {project.task: [display_name, project_id], '*': [display_name]}
+ *             name: ['{display_name} in {project_id} (n. {id})']
  *       recipients:         # which arguments of a tool that sends a mail are To, Cc and Bcc,
  *         send_email: {to: to, cc: cc, bcc: bcc}   # by their path in the call; per tool, or
  *         execute_tool:                            # by the argument naming the operation
@@ -64,7 +72,12 @@ final class ApprovalDeclaration
     public const RECIPIENT_ROLES = ['to', 'cc', 'bcc'];
 
     /** The keys of `record_names`. */
-    public const RECORD_NAME_KEYS = ['id', 'name', 'text_answers', 'date', 'group'];
+    public const RECORD_NAME_KEYS = ['id', 'name', 'text_answers', 'date', 'group', 'read'];
+
+    /** The keys of one entry of `record_names.read`, the ones a read cannot do without first. */
+    public const READ_KEYS = ['tools', 'ids', 'kind', 'with', 'arguments', 'fields', 'name'];
+
+    public const READ_REQUIRED = ['tools', 'ids', 'kind', 'with', 'arguments'];
 
     /** The keys of one rule of `record_names.group`. */
     public const GROUP_RULE_KEYS = ['label', 'field', 'match'];
@@ -377,6 +390,62 @@ final class ApprovalDeclaration
         }
         if (isset($names['group'])) {
             self::groups($names['group'], $found);
+        }
+        if (isset($names['read'])) {
+            self::reads($names['read'], $found);
+        }
+    }
+
+    /**
+     * How the names of the records a write carries by id are read before its
+     * approval is stored, for a connector whose answers do not name them: the
+     * write tools each entry is for, the arguments holding the ids, the
+     * argument saying what kind of record they are (`{model}`), the read-only
+     * tool that returns them and its arguments, the fields read for each kind
+     * (`*` for any other), and the templates a returned record is named by.
+     * The gateway reads it; the control-plane names the id by the same kind
+     * through `named_ids`.
+     *
+     * @param  list<string>  $found
+     */
+    private static function reads(mixed $reads, array &$found): void
+    {
+        $shape = '{tools, ids, kind, with, arguments} with fields and name optional';
+        if (! is_array($reads) || ! array_is_list($reads) || $reads === []) {
+            $found[] = "approval_display.record_names.read must be a list of reads, each {$shape}";
+
+            return;
+        }
+        foreach ($reads as $i => $read) {
+            $where = "approval_display.record_names.read.{$i}";
+            if (! is_array($read) || ($read !== [] && array_is_list($read))
+                || array_diff(array_keys($read), self::READ_KEYS) !== []
+                || array_diff(self::READ_REQUIRED, array_keys($read)) !== []
+                || ! is_string($read['with']) || trim($read['with']) === ''
+                || ! is_array($read['arguments']) || ($read['arguments'] !== [] && array_is_list($read['arguments']))) {
+                $found[] = "{$where} must be {$shape}";
+
+                continue;
+            }
+            self::names($read['tools'], "{$where}.tools", $found);
+            self::names($read['ids'], "{$where}.ids", $found);
+            if (! is_string($read['kind']) || preg_match('/^\{[A-Za-z_][A-Za-z0-9_]*\}$/', $read['kind']) !== 1) {
+                $found[] = "{$where}.kind must name an argument of the write, as {argument}";
+            }
+            if (isset($read['fields'])) {
+                $fields = $read['fields'];
+                $lists = is_array($fields) && ($fields === [] || ! array_is_list($fields));
+                foreach ($lists ? $fields : [] as $list) {
+                    $lists = $lists && is_array($list) && array_is_list($list) && $list !== []
+                        && array_filter($list, fn ($f) => ! is_string($f) || trim($f) === '') === [];
+                }
+                if (! $lists) {
+                    $found[] = "{$where}.fields must map a kind to a list of fields";
+                }
+            }
+            if (isset($read['name'])) {
+                self::names($read['name'], "{$where}.name", $found);
+            }
         }
     }
 
