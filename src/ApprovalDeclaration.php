@@ -451,9 +451,10 @@ final class ApprovalDeclaration
      * How the names of the records a write carries by id are read before its
      * approval is stored, for a connector whose answers do not name them: the
      * write tools each entry is for, the arguments holding the ids, the
-     * argument saying what kind of record they are (`{model}`), the read-only
-     * tool that returns them and its arguments, the fields read for each kind
-     * (`*` for any other), and the templates a returned record is named by.
+     * argument saying what kind of record they are (`{model}`) or a fixed word
+     * that is the kind of every id the read lists, the read-only tool that
+     * returns them and its arguments, the fields read for each kind (`*` for
+     * any other), and the templates a returned record is named by.
      * The gateway reads it; the control-plane names the id by the same kind
      * through `named_ids`.
      *
@@ -480,8 +481,10 @@ final class ApprovalDeclaration
             }
             self::names($read['tools'], "{$where}.tools", $found);
             self::names($read['ids'], "{$where}.ids", $found);
-            if (! is_string($read['kind']) || preg_match('/^\{[A-Za-z_][A-Za-z0-9_]*\}$/', $read['kind']) !== 1) {
-                $found[] = "{$where}.kind must name an argument of the write, as {argument}";
+            if (! is_string($read['kind'])
+                || (preg_match('/^\{[A-Za-z_][A-Za-z0-9_]*\}$/', $read['kind']) !== 1
+                    && preg_match('/^[A-Za-z0-9_.-]+$/', $read['kind']) !== 1)) {
+                $found[] = "{$where}.kind must be a word or name an argument of the write, as {argument}";
             }
             if (isset($read['fields'])) {
                 $fields = $read['fields'];

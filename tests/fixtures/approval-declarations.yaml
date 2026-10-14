@@ -13,6 +13,14 @@ entries:
       updateGoogleDoc: Modificare un documento Google
       insertText: Inserire del testo in un documento Google
       copyFile: Copiare un file del tuo Drive
+    record_names:
+      read:
+      - tools: [copyFile]
+        ids: [fileId]
+        kind: file
+        with: authTestFileAccess
+        arguments: {fileId: '{id}'}
+        name: ['{name}']
 - slug: gmail
   approval_display:
     sentences:
