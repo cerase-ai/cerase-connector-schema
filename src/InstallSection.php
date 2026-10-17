@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Cerase\ConnectorSchema;
 
+use Closure;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
@@ -20,8 +21,9 @@ use Filament\Schemas\Components\Utilities\Get;
  *
  * The install command / image are format-validated at the publishing boundary
  * via {@see Rules} (shell-metachar block / OCI ref), and the declared fields
- * by {@see Rules::fieldViolations()}. The offered install
- * modes, labels, section visibility, and the OPTIONAL strict
+ * by {@see Rules::fieldViolations()}. The hosts a runner reaches are edited
+ * here too, keeping the declaration next to the mode that needs it. The
+ * offered install modes, labels, section visibility, and the OPTIONAL strict
  * `credential_env`-required-for-env rule come from the config; every field
  * name is part of the shared descriptor contract.
  */
@@ -79,6 +81,27 @@ final class InstallSection
                     ->helperText($config->label('install.env_passthrough.helper'))
                     ->columnSpanFull()
                     ->visible(fn (Get $get): bool => in_array($get('install_mode'), ['command', 'image'], true)),
+                TagsInput::make(Hosts::KEY)
+                    ->label($config->label('install.hosts.label'))
+                    ->helperText($config->label('install.hosts.helper'))
+                    ->placeholder($config->label('install.hosts.placeholder'))
+                    ->columnSpanFull()
+                    ->default([])
+                    ->visible(fn (Get $get): bool => in_array($get('install_mode'), Hosts::RUNNER_MODES, true))
+                    // Stored as the list the runtime reads, never as a
+                    // repeater's keyed items or blank entries.
+                    ->dehydrateStateUsing(fn (mixed $state): array => Hosts::normalize($state))
+                    ->rule(fn (Get $get): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get, $config): void {
+                        $descriptor = [
+                            'install_mode' => $get('install_mode'),
+                            'hosts' => Hosts::normalize($value),
+                            'credential_parts' => CredentialFields::normalize($get('credential_parts')),
+                            'provider_fields' => CredentialFields::normalize($get('provider_fields')),
+                        ];
+                        foreach (Hosts::violations($descriptor, $config->getLocale()) as $violation) {
+                            $fail($violation);
+                        }
+                    }),
                 Select::make('credential_delivery')
                     ->label($config->label('credential.delivery.label'))
                     ->options($config->options('credential.delivery.options'))
@@ -118,6 +141,12 @@ final class InstallSection
         // OFF by default → the marketplace keeps every field editable.
         if (($disabled = $config->getDisabledWhen()) !== null) {
             foreach ($fields as $field) {
+                // The hosts say where the runner may connect, and an
+                // administrator corrects them on a connector already created
+                // without reinstalling it.
+                if ($field->getName() === Hosts::KEY) {
+                    continue;
+                }
                 $field->disabled($disabled);
             }
         }

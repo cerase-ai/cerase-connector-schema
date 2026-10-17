@@ -78,6 +78,9 @@ final class Labels
             'install.image.regex_message' => 'Must be a valid image reference (letters, digits and . _ / : @ - + only).',
             'install.env_passthrough.label' => 'Env passthrough',
             'install.env_passthrough.helper' => 'Env vars the runner forwards to the connector process.',
+            'install.hosts.label' => 'Hosts it reaches',
+            'install.hosts.helper' => 'The hosts outside the platform this connector\'s runner connects to: a name such as api.example.com, *.example.com for any of its subdomains, {FIELD} for the host of the address a connection\'s field holds, or * for any host. Leave it empty when the connector reaches nothing outside the platform; the platform\'s own services are never listed.',
+            'install.hosts.placeholder' => 'Add a host',
             'credential.delivery.label' => 'Credential delivery',
             'credential.delivery.options' => [
                 'header' => 'HTTP header (per-call Authorization)',
@@ -127,6 +130,14 @@ final class Labels
             'violation.field_flag_invalid' => ':list › :key: :detail must be true or false.',
             'violation.field_suggestion_invalid' => ':list › :key: the suggestion is not valid — :detail.',
             'violation.field_suggestion_not_allowed' => ':list › :key: only a field of credential_parts may declare a suggestion.',
+            'violation.hosts_required' => 'hosts: a connector that runs in a runner declares the hosts it reaches outside the platform, or an empty list when it reaches none.',
+            'violation.hosts_without_runner' => 'hosts: a connector reached at its own address runs no runner, so it declares no hosts.',
+            'violation.hosts_not_a_list' => 'hosts must be a list of host names.',
+            'violation.host_invalid' => 'hosts › :host: write a host name such as api.example.com, *.example.com for any of its subdomains, {FIELD} for the host of the address a connection\'s field holds, or * for any host, with no scheme, port or path.',
+            'violation.host_platform' => 'hosts › :host: is not a public host name. A runner reaches the platform\'s own services through its networks, never through this list.',
+            'violation.host_any_not_alone' => 'hosts: * already means any host, so it is the only entry.',
+            'violation.host_duplicate' => 'hosts › :host: named twice.',
+            'violation.host_field_unknown' => 'hosts › :host: :field is not a field of this connector declared secret: false.',
         ];
     }
 
@@ -173,6 +184,9 @@ final class Labels
             'install.image.regex_message' => 'Deve essere un riferimento immagine valido (lettere, cifre e . _ / : @ - + soltanto).',
             'install.env_passthrough.label' => 'Variabili d\'ambiente inoltrate',
             'install.env_passthrough.helper' => 'Variabili d\'ambiente che il runner inoltra al processo del connettore.',
+            'install.hosts.label' => 'Host che raggiunge',
+            'install.hosts.helper' => 'Gli host fuori dalla piattaforma a cui si collega il runner del connettore: un nome come api.esempio.it, *.esempio.it per tutti i suoi sottodomini, {CAMPO} per l\'host dell\'indirizzo scritto in un campo del collegamento, oppure * per qualunque host. Lascialo vuoto se il connettore non si collega a nulla fuori dalla piattaforma: i servizi della piattaforma non vanno indicati.',
+            'install.hosts.placeholder' => 'Aggiungi un host',
             'credential.delivery.label' => 'Consegna delle credenziali',
             'credential.delivery.options' => [
                 'header' => 'Header HTTP (Authorization per chiamata)',
@@ -222,6 +236,14 @@ final class Labels
             'violation.field_flag_invalid' => ':list › :key: :detail dev\'essere true o false.',
             'violation.field_suggestion_invalid' => ':list › :key: il suggerimento non è valido — :detail.',
             'violation.field_suggestion_not_allowed' => ':list › :key: solo un campo di credential_parts può dichiarare un suggerimento.',
+            'violation.hosts_required' => 'hosts: un connettore che gira in un runner dichiara gli host che raggiunge fuori dalla piattaforma, oppure una lista vuota se non ne raggiunge nessuno.',
+            'violation.hosts_without_runner' => 'hosts: un connettore raggiunto al suo indirizzo non ha un runner, quindi non dichiara host.',
+            'violation.hosts_not_a_list' => 'hosts dev\'essere una lista di nomi di host.',
+            'violation.host_invalid' => 'hosts › :host: scrivi un nome di host come api.esempio.it, *.esempio.it per tutti i suoi sottodomini, {CAMPO} per l\'host dell\'indirizzo scritto in un campo del collegamento, oppure * per qualunque host, senza schema, porta o percorso.',
+            'violation.host_platform' => 'hosts › :host: non è un nome di host pubblico. Un runner raggiunge i servizi della piattaforma attraverso le sue reti, mai attraverso questa lista.',
+            'violation.host_any_not_alone' => 'hosts: * vuol già dire qualunque host, quindi è l\'unica voce.',
+            'violation.host_duplicate' => 'hosts › :host: compare due volte.',
+            'violation.host_field_unknown' => 'hosts › :host: :field non è un campo di questo connettore dichiarato secret: false.',
         ];
     }
 }

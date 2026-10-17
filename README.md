@@ -20,7 +20,7 @@ management plane.
 - **Authentication section** — `auth_kind`, `auth_registration`,
   `auth_provider`, `auth_instructions`.
 - **Install section** — `install_mode`, `install_remote_url`,
-  `install_command`, `install_image`, `install_env_passthrough`,
+  `install_command`, `install_image`, `install_env_passthrough`, `hosts`,
   `credential_delivery`, `credential_env`, `credential_scope`, `scopes`,
   `credential_files`, and the two field lists `credential_parts` and
   `provider_fields`.
@@ -33,6 +33,8 @@ management plane.
 - **Batch limits** — the shape of a connector's `batch_limits` block, which
   says which argument of a tool is a list and the most items one call takes
   (`BatchLimits`).
+- **Hosts** — the shape of a connector's `hosts` list, which says which hosts
+  its runner reaches outside the platform (`Hosts`).
 - **Labels** in English and Italian (`Labels::LOCALES`).
 
 The *Identity* section is not here: the Marketplace keys a package by
@@ -244,6 +246,38 @@ of one tool's lists cannot be split, since every part would repeat the other
 list, so the gateway refuses it before anybody is asked and says to send the
 lists in separate calls.
 
+## The hosts a runner reaches
+
+`hosts` says which hosts a connector's runner reaches outside the platform.
+The list is read by name, so it names hosts, never ports or paths.
+
+```yaml
+hosts:                         # the hosts outside the platform its runner reaches
+  - api.airtable.com           # a host by name
+  - "*.googleusercontent.com"  # any subdomain of a name
+  - "{ODOO_URL}"               # the host of the address a connection's field holds
+hosts: ["*"]                   # any host, for a browser
+hosts: []                      # none: the runner reaches only the platform's own services
+```
+
+```php
+use Cerase\ConnectorSchema\Hosts;
+
+Hosts::violations($descriptor, 'it');  // list<string>, empty = valid
+Hosts::runsARunner($descriptor);       // bool
+Hosts::normalize($formState);          // list<string> as stored
+Hosts::fieldOf('{ODOO_URL}');          // 'ODOO_URL'
+```
+
+Only a connector with an install command or image declares it, and must. A
+connector reached at its own address declares none. `*` is alone, since it
+already means any host. A `{FIELD}` names a field declared `secret: false`. A
+name without a dot is refused because the platform's own services are reached
+through the runner's networks and are never listed. The form field stays
+editable when `disabledWhen` locks the rest. An empty field in a form is
+stored as `[]`, a declaration that the runner reaches nothing outside the
+platform.
+
 ## Tests
 
 ```bash
@@ -264,8 +298,8 @@ installed for its tier; the runner prints the install command when it is not.
 
 The section builders need a booted Filament app, so their behaviour is tested
 in the consuming applications' form tests; this suite checks the rules, the
-approval declaration, the batch limits, the config, and that each builder exposes a static
-`make(ConnectorSchemaConfig)`.
+approval declaration, the batch limits, the hosts, the config, and that each
+builder exposes a static `make(ConnectorSchemaConfig)`.
 
 `scripts/docs-parity.sh`, `scripts/comment-check.sh`, `scripts/secrets-guard.sh`,
 their two helpers and `.github/workflows/dependabot-auto-merge.yml` are copies
