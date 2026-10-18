@@ -321,4 +321,6 @@ cerase-ai/cerase-connector-schema` in each application.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). Report a vulnerability privately, as
+[`SECURITY.md`](SECURITY.md) describes; how to contribute is in
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
