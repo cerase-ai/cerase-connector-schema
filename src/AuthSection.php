@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Cerase\ConnectorSchema;
 
+use Closure;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -45,8 +46,11 @@ final class AuthSection
                 ->required()
                 // Refuse a kind no consumer can connect yet, always — not only
                 // under strict cross-field rules — with the same sentence the
-                // server-side callers use.
-                ->rule(Rules::authKindRule($config->getLocale()))
+                // server-side callers use. Wrapped in a closure that returns the
+                // rule: Filament evaluates a closure handed to rule() itself,
+                // resolving its parameters by name, and cannot resolve
+                // $attribute, $value and $fail.
+                ->rule(fn (): Closure => Rules::authKindRule($config->getLocale()))
                 ->native(false)
                 ->live(),
             Select::make('auth_registration')
