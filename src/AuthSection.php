@@ -43,6 +43,10 @@ final class AuthSection
                 ->options($config->options('auth.kind.options'))
                 ->default('none')
                 ->required()
+                // Refuse a kind no consumer can connect yet, always — not only
+                // under strict cross-field rules — with the same sentence the
+                // server-side callers use.
+                ->rule(Rules::authKindRule($config->getLocale()))
                 ->native(false)
                 ->live(),
             Select::make('auth_registration')

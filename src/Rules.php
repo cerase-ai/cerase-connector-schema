@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Cerase\ConnectorSchema;
 
+use Closure;
+
 /**
  * Format rules for the connector install descriptor — the security boundary of
  * the whole schema.
@@ -28,6 +30,20 @@ final class Rules
     public const IMAGE_REGEX = '~^[A-Za-z0-9._/:@\-+]+$~';
 
     /**
+     * Every auth kind a connector may declare, in the order the form offers
+     * them. A kind is declared here before any consumer can connect it, so a
+     * publisher can describe the login its connector needs.
+     */
+    public const AUTH_KINDS = ['none', 'bearer', 'oauth2', 'browser'];
+
+    /**
+     * The auth kinds a consumer can connect today. A kind moves here only when
+     * the consumers can serve it, by a release of this library — until then a
+     * connector that needs it is refused rather than installed unusable.
+     */
+    public const AUTH_KINDS_SERVED = ['none', 'bearer', 'oauth2'];
+
+    /**
      * Cross-field violation: `credential_delivery` is `env` but no
      * `credential_env` (the env-var NAME) was given — the per-connection runner
      * is spawned fail-closed and can never receive its credential.
@@ -40,6 +56,13 @@ final class Rules
      * app / discovery, so it can never complete a connection.
      */
     public const VIOLATION_AUTH_PROVIDER_REQUIRED = 'auth_provider_required';
+
+    /**
+     * Cross-field violation: `auth_kind` is a kind the schema declares but no
+     * consumer can connect yet, so the connector would be installed with no way
+     * to link an account.
+     */
+    public const VIOLATION_AUTH_KIND_NOT_SERVED = 'auth_kind_not_served';
 
     /**
      * A connector authenticating with a key declares no `credential_parts`, so
@@ -101,21 +124,25 @@ final class Rules
     }
 
     /**
-     * The strict cross-field descriptor rules, as a PURE function.
+     * The cross-field descriptor rules, as a PURE function.
      *
-     * These are the SAME two rules the Filament forms enforce via `->required()`
-     * when {@see ConnectorSchemaConfig::strictCrossField()} is on. Exposing them
-     * here lets the SERVER side (the control-plane's custom-connector registrar /
-     * API-maintainer path) reject the identical set — one definition, so the
-     * form and the API can never drift.
+     * The first two are the SAME rules the Filament forms enforce via
+     * `->required()` when {@see ConnectorSchemaConfig::strictCrossField()} is
+     * on. The third is always refused: a declared kind no consumer can connect
+     * yet would install a connector with no way to link an account. Exposing
+     * them here lets the SERVER side (the control-plane's custom-connector
+     * registrar / API-maintainer path) reject the identical set — one
+     * definition, so the form and the API can never drift.
      *
      * Returns the violated rule codes (an empty list = the descriptor is
-     * well-formed against the strict rules). A blank string counts as missing:
+     * well-formed against the rules). A blank string counts as missing:
      *
      *   - {@see VIOLATION_CREDENTIAL_ENV_REQUIRED}: `credential_delivery` is
      *     `env` but `credential_env` is blank;
      *   - {@see VIOLATION_AUTH_PROVIDER_REQUIRED}: `auth_kind` is `oauth2` but
-     *     `auth_provider` is blank.
+     *     `auth_provider` is blank;
+     *   - {@see VIOLATION_AUTH_KIND_NOT_SERVED}: `auth_kind` is a declared kind
+     *     no consumer can connect yet.
      *
      * @param  array<string, mixed>  $descriptor
      * @return list<string>
@@ -134,7 +161,40 @@ final class Rules
             $violations[] = self::VIOLATION_AUTH_PROVIDER_REQUIRED;
         }
 
+        $kind = $descriptor['auth_kind'] ?? null;
+        if (is_string($kind)
+            && in_array($kind, self::AUTH_KINDS, true)
+            && ! in_array($kind, self::AUTH_KINDS_SERVED, true)) {
+            $violations[] = self::VIOLATION_AUTH_KIND_NOT_SERVED;
+        }
+
         return $violations;
+    }
+
+    /**
+     * One cross-field violation code as a sentence, in English or Italian.
+     * Falls back to the code when the catalog has no label for it.
+     */
+    public static function crossFieldViolationMessage(string $code, string $locale = 'en'): string
+    {
+        $message = Labels::for($locale)['violation.'.$code] ?? null;
+
+        return is_string($message) ? $message : $code;
+    }
+
+    /**
+     * The Laravel validation closure that refuses an auth kind no consumer can
+     * connect yet, with the same sentence the server-side callers use.
+     */
+    public static function authKindRule(string $locale = 'en'): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail) use ($locale): void {
+            if (is_string($value)
+                && in_array($value, self::AUTH_KINDS, true)
+                && ! in_array($value, self::AUTH_KINDS_SERVED, true)) {
+                $fail(self::crossFieldViolationMessage(self::VIOLATION_AUTH_KIND_NOT_SERVED, $locale));
+            }
+        };
     }
 
     /**

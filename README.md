@@ -126,6 +126,8 @@ Rules::commandIsValid($string);    // bool
 Rules::imageIsValid($string);      // bool
 
 Rules::crossFieldViolations($descriptor);  // list<string> of codes, empty = valid
+Rules::crossFieldViolationMessage($code, 'it');  // one violation code as a sentence
+Rules::authKindRule('it');                 // Laravel rule closure refusing an unserved kind
 Rules::fieldViolations($descriptor);       // list of {code, list, key, detail}
 Rules::fieldViolationMessage($violation, 'it');  // one violation as a sentence
 ```
@@ -134,15 +136,18 @@ The command rule allows no quoting, pipes, redirection, substitution or
 chaining, because the command is handed to a sandboxed runner; the image rule
 keeps an image reference from breaking out of the `docker` argument.
 
-**Cross-field rules** (`crossFieldViolations`, and `->required()` on the form
-when `strictCrossField()` is on):
+**Cross-field rules** (`crossFieldViolations`; the first two become
+`->required()` on the form when `strictCrossField()` is on):
 
 - `auth_provider_required` — `auth_kind` is `oauth2` and `auth_provider` is
   blank;
 - `credential_env_required` — `credential_delivery` is `env` and
-  `credential_env` is blank.
+  `credential_env` is blank;
+- `auth_kind_not_served` — `auth_kind` is a kind no consumer can connect yet
+  (`browser` today), refused on the form whatever `strictCrossField()` says.
 
-They are off by default on the form; both applications turn them on.
+The first two are off by default on the form; both applications turn them on.
+The last is always refused.
 
 ## The fields a connector asks for
 
