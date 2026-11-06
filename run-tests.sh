@@ -8,6 +8,7 @@
 #   ./run-tests.sh docs            # no document names a command or path that is gone
 #   ./run-tests.sh comments        # the comment convention, on this push's commits
 #   ./run-tests.sh secrets         # no credential file in the tree, no retired name
+#   ./run-tests.sh image-bases     # every image names its base by digest, no installer piped to a shell
 #   ./run-tests.sh gitleaks        # the secret scan that hard-blocks the publish
 #   ./run-tests.sh phpunit [args]  # the suite only, arguments passed through
 #
@@ -122,6 +123,15 @@ run_secrets_guard() {
     fi
 }
 
+run_image_bases_guard() {
+    info "image bases guard"
+    if bash "$ROOT/scripts/image-bases-guard.sh"; then
+        ok "image bases guard clean"
+    else
+        FAILED+=("image-bases-guard")
+    fi
+}
+
 # The gate that hard-blocks every push, runnable here.
 #
 # An absent scanner is a failure with install instructions, never a skip. A
@@ -162,9 +172,10 @@ case "${1:-all}" in
     docs)     run_docs_parity ;;
     comments) run_comment_check ;;
     secrets)  run_secrets_guard ;;
+    image-bases) run_image_bases_guard ;;
     gitleaks) run_gitleaks ;;
     phpunit)  shift; run_phpunit "$@" ;;
-    all)      run_tooling_pin; run_docs_parity; run_comment_check; run_secrets_guard; run_gitleaks; run_phpunit ;;
+    all)      run_tooling_pin; run_docs_parity; run_comment_check; run_secrets_guard; run_image_bases_guard; run_gitleaks; run_phpunit ;;
     *)        die "unknown tier '$1' — see the header of this file" ;;
 esac
 
