@@ -42,6 +42,38 @@ final class InstallSection
             $credentialEnv->required(fn (Get $get): bool => $get('credential_delivery') === 'env');
         }
 
+        $remoteUrl = TextInput::make('install_remote_url')
+            ->label($config->label('install.remote_url.label'))
+            ->url()
+            ->columnSpanFull()
+            ->visible(fn (Get $get): bool => $get('install_mode') === 'remote_url')
+            ->required(fn (Get $get): bool => $get('install_mode') === 'remote_url');
+
+        $image = TextInput::make('install_image')
+            ->label($config->label('install.image.label'))
+            ->helperText($config->label('install.image.helper'))
+            ->columnSpanFull()
+            // An OCI image ref — reject anything that could break out of
+            // the docker argument.
+            ->rule(Rules::imageRule())
+            ->validationMessages(['regex' => $config->label('install.image.regex_message')])
+            ->visible(fn (Get $get): bool => $get('install_mode') === 'image')
+            ->required(fn (Get $get): bool => $get('install_mode') === 'image');
+
+        if ($config->isPublishedByOthers()) {
+            $remoteUrl->rule(fn (): Closure => function (string $attribute, mixed $value, Closure $fail) use ($config): void {
+                if (! Rules::isPublicHttpsUrl((string) $value)) {
+                    $fail($config->label('install.remote_url.public_message'));
+                }
+            });
+
+            $image->rule(fn (): Closure => function (string $attribute, mixed $value, Closure $fail) use ($config): void {
+                if (! Rules::isPinnedImage((string) $value)) {
+                    $fail($config->label('install.image.digest_message'));
+                }
+            });
+        }
+
         $fields = [
                 Select::make('install_mode')
                     ->label($config->label('install.mode.label'))
@@ -50,12 +82,7 @@ final class InstallSection
                     ->live()
                     ->columnSpanFull()
                     ->helperText($config->label('install.mode.helper')),
-                TextInput::make('install_remote_url')
-                    ->label($config->label('install.remote_url.label'))
-                    ->url()
-                    ->columnSpanFull()
-                    ->visible(fn (Get $get): bool => $get('install_mode') === 'remote_url')
-                    ->required(fn (Get $get): bool => $get('install_mode') === 'remote_url'),
+                $remoteUrl,
                 TextInput::make('install_command')
                     ->label($config->label('install.command.label'))
                     ->helperText($config->label('install.command.helper'))
@@ -66,16 +93,7 @@ final class InstallSection
                     ->validationMessages(['regex' => $config->label('install.command.regex_message')])
                     ->visible(fn (Get $get): bool => $get('install_mode') === 'command')
                     ->required(fn (Get $get): bool => $get('install_mode') === 'command'),
-                TextInput::make('install_image')
-                    ->label($config->label('install.image.label'))
-                    ->helperText($config->label('install.image.helper'))
-                    ->columnSpanFull()
-                    // An OCI image ref — reject anything that could break out of
-                    // the docker argument.
-                    ->rule(Rules::imageRule())
-                    ->validationMessages(['regex' => $config->label('install.image.regex_message')])
-                    ->visible(fn (Get $get): bool => $get('install_mode') === 'image')
-                    ->required(fn (Get $get): bool => $get('install_mode') === 'image'),
+                $image,
                 TagsInput::make('install_env_passthrough')
                     ->label($config->label('install.env_passthrough.label'))
                     ->helperText($config->label('install.env_passthrough.helper'))

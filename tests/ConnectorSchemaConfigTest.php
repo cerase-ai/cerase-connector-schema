@@ -104,6 +104,30 @@ final class ConnectorSchemaConfigTest extends TestCase
         self::assertSame(['remote_url', 'command', 'image'], $config->getInstallModes());
     }
 
+    public function test_a_connector_is_not_published_by_others_by_default(): void
+    {
+        self::assertFalse(ConnectorSchemaConfig::make()->isPublishedByOthers());
+    }
+
+    public function test_a_connector_can_be_published_by_others(): void
+    {
+        self::assertTrue(ConnectorSchemaConfig::make()->publishedByOthers()->isPublishedByOthers());
+    }
+
+    public function test_published_by_others_returns_a_fresh_config_and_keeps_the_other_settings(): void
+    {
+        $base = ConnectorSchemaConfig::make()
+            ->installModes(['remote_url', 'image'])
+            ->locale('it');
+
+        $published = $base->publishedByOthers();
+
+        self::assertFalse($base->isPublishedByOthers());
+        self::assertTrue($published->isPublishedByOthers());
+        self::assertSame(['remote_url', 'image'], $published->getInstallModes());
+        self::assertSame('it', $published->getLocale());
+    }
+
     public function test_locale_switches_the_catalog(): void
     {
         $it = ConnectorSchemaConfig::make()->locale('it');

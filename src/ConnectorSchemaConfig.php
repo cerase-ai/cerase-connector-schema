@@ -38,6 +38,7 @@ final class ConnectorSchemaConfig
         private ?Closure $sectionVisibility = null,
         private bool $strictCrossField = false,
         private ?Closure $disabledWhen = null,
+        private bool $publishedByOthers = false,
     ) {}
 
     public static function make(): self
@@ -90,6 +91,17 @@ final class ConnectorSchemaConfig
     }
 
     /**
+     * Hold the connector to the rules for a package published by somebody
+     * else: its image is pinned by digest and its remote URL is https on a
+     * public host name. Off by default, so an administrator's own connector
+     * keeps the private addresses and ordinary tags it needs.
+     */
+    public function publishedByOthers(bool $published = true): self
+    {
+        return $this->with(publishedByOthers: $published);
+    }
+
+    /**
      * Disable EVERY field of the Authentication + Install sections when the
      * predicate is truthy. The control-plane locks a custom connector's
      * descriptor after creation (the fields are immutable post-install), so it
@@ -133,6 +145,11 @@ final class ConnectorSchemaConfig
     public function isStrictCrossField(): bool
     {
         return $this->strictCrossField;
+    }
+
+    public function isPublishedByOthers(): bool
+    {
+        return $this->publishedByOthers;
     }
 
     /**
@@ -217,6 +234,7 @@ final class ConnectorSchemaConfig
         ?Closure $sectionVisibility = null,
         ?bool $strictCrossField = null,
         ?Closure $disabledWhen = null,
+        ?bool $publishedByOthers = null,
     ): self {
         $clone = new self(
             $installModes ?? $this->installModes,
@@ -224,6 +242,7 @@ final class ConnectorSchemaConfig
             $this->sectionVisibility,
             $strictCrossField ?? $this->strictCrossField,
             $this->disabledWhen,
+            $publishedByOthers ?? $this->publishedByOthers,
         );
 
         // A null closure means "unchanged" (we can't distinguish "clear it"

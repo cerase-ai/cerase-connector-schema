@@ -107,6 +107,7 @@ without side effects.
 | `visibleWhen(Closure $gate)` | Show both sections only when `fn (Get): bool` is true | always visible |
 | `disabledWhen(Closure $gate)` | Disable every descriptor field when truthy; the closure goes straight to Filament's `->disabled()`, so it may inject `$operation`, `$get`, `$record` | editable |
 | `strictCrossField(bool $on = true)` | Make the two cross-field rules required on the form | off |
+| `publishedByOthers(bool $on = true)` | The connector is published by somebody else: its image must be pinned by digest and its remote URL must be `https` on a public host name | off |
 
 `AuthSection::make($config)` and `InstallSection::make($config)` each return a
 Filament `Section`. The Install section includes the two field-list repeaters,
@@ -124,6 +125,8 @@ Rules::commandRule();              // 'regex:…' as a Laravel rule string
 Rules::imageRule();
 Rules::commandIsValid($string);    // bool
 Rules::imageIsValid($string);      // bool
+Rules::isPinnedImage($string);     // bool: ends in @sha256: and 64 lowercase hex
+Rules::isPublicHttpsUrl($string);  // bool: https, no IP literal, no single label, no localhost
 
 Rules::crossFieldViolations($descriptor);  // list<string> of codes, empty = valid
 Rules::crossFieldViolationMessage($code, 'it');  // one violation code as a sentence

@@ -124,6 +124,55 @@ final class Rules
     }
 
     /**
+     * Whether the image reference is pinned by digest: a valid OCI reference
+     * ending in `@sha256:` followed by 64 lowercase hex characters. A tag can
+     * be moved to another image; a digest cannot.
+     */
+    public static function isPinnedImage(string $image): bool
+    {
+        return self::imageIsValid($image)
+            && preg_match('~@sha256:[a-f0-9]{64}\z~', $image) === 1;
+    }
+
+    /**
+     * Whether the URL is https on a public host name: the address a connector
+     * published by others is reached at.
+     *
+     * An administrator's own connector may sit on a private address inside
+     * their network, so the box allows one. A published connector's URL is
+     * typed by its publisher, and the box calls it from inside the customer's
+     * network, so a private address would let a publisher reach that network.
+     * This rule refuses an IP literal, a host with no dot and localhost with
+     * every name under it; a public name resolving to a private address is the
+     * box's to refuse when it calls.
+     */
+    public static function isPublicHttpsUrl(string $url): bool
+    {
+        if (strtolower((string) parse_url($url, PHP_URL_SCHEME)) !== 'https') {
+            return false;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+        if (! is_string($host) || $host === '') {
+            return false;
+        }
+
+        // parse_url keeps the brackets around an IPv6 literal; filter_var
+        // needs the bare address.
+        $address = trim($host, '[]');
+        if (filter_var($address, FILTER_VALIDATE_IP) !== false) {
+            return false;
+        }
+
+        $host = strtolower(rtrim($host, '.'));
+        if ($host === 'localhost' || str_ends_with($host, '.localhost')) {
+            return false;
+        }
+
+        return str_contains($host, '.');
+    }
+
+    /**
      * The cross-field descriptor rules, as a PURE function.
      *
      * The first two are the SAME rules the Filament forms enforce via

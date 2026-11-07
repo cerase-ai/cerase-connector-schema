@@ -100,6 +100,91 @@ final class RulesTest extends TestCase
         self::assertFalse(Rules::imageIsValid($image), "expected REJECTED: {$image}");
     }
 
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function pinnedImages(): array
+    {
+        $digest = str_repeat('a', 64);
+
+        return [
+            'digest only' => ["ghcr.io/acme/x@sha256:{$digest}"],
+            'tag and digest' => ["ghcr.io/acme/x:1.2@sha256:{$digest}"],
+        ];
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function unpinnedImages(): array
+    {
+        $digest = str_repeat('a', 64);
+
+        return [
+            'tag only' => ['ghcr.io/acme/x:latest'],
+            'no tag or digest' => ['ghcr.io/acme/x'],
+            'digest one character short' => ['ghcr.io/acme/x@sha256:'.str_repeat('a', 63)],
+            'sha512 digest' => ["ghcr.io/acme/x@sha512:{$digest}"],
+            'uppercase hex' => ['ghcr.io/acme/x@sha256:'.str_repeat('A', 64)],
+            'fails the image regex' => ["ghcr.io/acme/x@sha256:{$digest}!"],
+        ];
+    }
+
+    #[DataProvider('pinnedImages')]
+    public function test_an_image_pinned_by_digest_is_accepted(string $image): void
+    {
+        self::assertTrue(Rules::isPinnedImage($image), "expected PINNED: {$image}");
+    }
+
+    #[DataProvider('unpinnedImages')]
+    public function test_an_image_not_pinned_by_digest_is_refused(string $image): void
+    {
+        self::assertFalse(Rules::isPinnedImage($image), "expected UNPINNED: {$image}");
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function publicHttpsUrls(): array
+    {
+        return [
+            'a host and path' => ['https://mcp.example.com/mcp'],
+            'a host and port' => ['https://mcp.example.com:8443/x'],
+        ];
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function nonPublicHttpsUrls(): array
+    {
+        return [
+            'plain http' => ['http://mcp.example.com/mcp'],
+            'localhost' => ['https://localhost/x'],
+            'a localhost subdomain' => ['https://api.localhost/x'],
+            'a single label' => ['https://intranet/x'],
+            'a private IPv4 address' => ['https://192.168.1.1/x'],
+            'a link-local IPv4 address' => ['https://169.254.169.254/x'],
+            'the IPv6 loopback' => ['https://[::1]/x'],
+            'a private IPv6 address' => ['https://[fd00::1]/x'],
+            'a private IPv4 address with a port' => ['https://10.0.0.1:8443/x'],
+            'an empty string' => [''],
+            'no scheme' => ['mcp.example.com/mcp'],
+        ];
+    }
+
+    #[DataProvider('publicHttpsUrls')]
+    public function test_a_public_https_url_is_accepted(string $url): void
+    {
+        self::assertTrue(Rules::isPublicHttpsUrl($url), "expected PUBLIC: {$url}");
+    }
+
+    #[DataProvider('nonPublicHttpsUrls')]
+    public function test_a_url_that_is_not_a_public_https_url_is_refused(string $url): void
+    {
+        self::assertFalse(Rules::isPublicHttpsUrl($url), "expected NOT PUBLIC: {$url}");
+    }
+
     public function test_regex_literals_match_the_marketplace_source(): void
     {
         // These byte-exact literals are what PackageResource has shipped; the
