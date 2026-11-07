@@ -29,7 +29,7 @@ jobs:
     steps:
       # Full history: the comment check compares against the previous commit of
       # this push, which a shallow clone does not contain.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { fetch-depth: 0 }
       # The three guard scripts below are cerase-core's, copied here by its
       # scripts/sync-tooling.sh. The pin is what makes the copy a copy: without
@@ -66,7 +66,7 @@ jobs:
         run: bash scripts/image-bases-guard.sh
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: ${{ matrix.php }}
           extensions: intl
@@ -93,7 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { fetch-depth: 0 }
       - name: Install gitleaks
         env:
