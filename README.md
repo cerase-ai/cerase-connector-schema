@@ -133,6 +133,7 @@ Rules::crossFieldViolationMessage($code, 'it');  // one violation code as a sent
 Rules::authKindRule('it');                 // Laravel rule closure refusing an unserved kind
 Rules::fieldViolations($descriptor);       // list of {code, list, key, detail}
 Rules::fieldViolationMessage($violation, 'it');  // one violation as a sentence
+Rules::headerViolations($descriptor);      // list<string> of sentences, empty = valid
 ```
 
 The command rule allows no quoting, pipes, redirection, substitution or
@@ -195,6 +196,26 @@ suggestion, and a connector with `auth_kind: bearer` that declares no
 bearer-without-fields rule is enforced by the server-side caller.
 `CredentialFields::normalize($formState)` turns what a form or a YAML/JSON file
 holds into the list as stored.
+
+## How a connector's key is sent
+
+A connector whose key travels in a header declares how it is sent in an
+`auth_header` block (`auth.header` in a catalogue entry):
+
+```yaml
+header:
+  name: Authorization      # optional, default Authorization
+  scheme: bearer           # bearer (default) sends "Bearer <key>", bare sends "<key>", basic sends "Basic base64(<user>:<key>)"
+  basic_user: SITE_EMAIL   # basic only, required then: the credential part holding the user; the key is the part marked secret
+  extra:                   # optional fixed headers, each value a template over credential parts
+    wix-account-id: "{ACCOUNT_ID}"
+```
+
+No block means `Authorization: Bearer <key>`. The key is the `credential_parts`
+field marked `secret: true`. `Rules::headerViolations($descriptor)` refuses a
+block outside `delivery: header`, an unknown scheme, a `basic` block without
+`basic_user`, a name or value that could split a header, and a placeholder
+naming no declared part.
 
 ## The approval declaration
 

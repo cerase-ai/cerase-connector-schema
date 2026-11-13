@@ -44,6 +44,26 @@ final class Rules
     public const AUTH_KINDS_SERVED = ['none', 'bearer', 'oauth2'];
 
     /**
+     * The schemes that wrap a header-delivered key: `bearer` sends
+     * `Bearer <key>`, `bare` sends `<key>`, `basic` sends
+     * `Basic base64(<user>:<key>)`.
+     */
+    public const HEADER_SCHEMES = ['bearer', 'bare', 'basic'];
+
+    /** The header a key is sent in when the block names none. */
+    public const HEADER_DEFAULT_NAME = 'Authorization';
+
+    /** The keys an `auth_header` block may carry. */
+    public const HEADER_KEYS = ['name', 'scheme', 'basic_user', 'extra'];
+
+    /**
+     * A header name: an RFC 9110 token. Anchored with \A and \z, never $,
+     * because $ also matches before a trailing newline and would let a name
+     * split a header.
+     */
+    public const HEADER_NAME_REGEX = '~\A[!#$%&\'*+\-.^_`|\~0-9A-Za-z]+\z~';
+
+    /**
      * Cross-field violation: `credential_delivery` is `env` but no
      * `credential_env` (the env-var NAME) was given — the per-connection runner
      * is spawned fail-closed and can never receive its credential.
@@ -351,6 +371,153 @@ final class Rules
             ':key' => $violation['key'],
             ':detail' => $violation['detail'],
         ]);
+    }
+
+    /**
+     * Every reason a header-delivery connector's `auth_header` block cannot be
+     * read, one sentence each, in English or Italian.
+     *
+     * The block says how the key travels in the header: its name, the scheme
+     * that wraps it, the field holding a basic user, and any fixed extra
+     * headers built from the connector's fields. Only a connector whose
+     * delivery is `header` (the default when none is declared) declares one;
+     * a missing block declares nothing. An empty list means the block is valid.
+     *
+     * @param  array<string, mixed>  $descriptor
+     * @return list<string>
+     */
+    public static function headerViolations(array $descriptor, string $locale = 'en'): array
+    {
+        $labels = Labels::for($locale);
+        $message = static function (string $code, array $replace = []) use ($labels): string {
+            $template = $labels['violation.'.$code] ?? $code;
+
+            return strtr((string) $template, $replace);
+        };
+
+        $block = $descriptor['auth_header'] ?? null;
+        if ($block === null) {
+            return [];
+        }
+
+        $delivery = $descriptor['credential_delivery'] ?? null;
+        if ($delivery !== null && $delivery !== 'header') {
+            return [$message('header_only_with_header_delivery')];
+        }
+
+        if (! is_array($block) || ($block !== [] && array_is_list($block))) {
+            return [$message('header_not_a_mapping')];
+        }
+
+        $found = [];
+
+        foreach (array_keys($block) as $key) {
+            if (! in_array($key, self::HEADER_KEYS, true)) {
+                $found[] = $message('header_key_unknown', [':key' => self::shown($key)]);
+            }
+        }
+
+        $mainName = self::HEADER_DEFAULT_NAME;
+        if (array_key_exists('name', $block)) {
+            $name = $block['name'];
+            if (is_string($name) && preg_match(self::HEADER_NAME_REGEX, $name) === 1) {
+                $mainName = $name;
+            } else {
+                $found[] = $message('header_name_invalid', [':name' => self::shown($name)]);
+            }
+        }
+
+        $scheme = $block['scheme'] ?? null;
+        if (array_key_exists('scheme', $block)
+            && (! is_string($scheme) || ! in_array($scheme, self::HEADER_SCHEMES, true))) {
+            $found[] = $message('header_scheme_unknown', [':scheme' => self::shown($scheme)]);
+        }
+        $effectiveScheme = is_string($scheme) ? $scheme : 'bearer';
+
+        $parts = self::partKeys($descriptor);
+        $basicUser = $block['basic_user'] ?? null;
+        if ($effectiveScheme === 'basic') {
+            if (! is_string($basicUser) || trim($basicUser) === '') {
+                $found[] = $message('header_basic_user_required');
+            } elseif (! isset($parts[trim($basicUser)])) {
+                $found[] = $message('header_basic_user_unknown', [':field' => $basicUser]);
+            }
+        } elseif (array_key_exists('basic_user', $block)) {
+            $found[] = $message('header_basic_user_only_with_basic');
+        }
+
+        if (array_key_exists('extra', $block)) {
+            $extra = $block['extra'];
+            if (! is_array($extra) || ($extra !== [] && array_is_list($extra))) {
+                $found[] = $message('header_extra_not_a_mapping');
+            } else {
+                foreach ($extra as $header => $value) {
+                    $header = (string) $header;
+
+                    if (preg_match(self::HEADER_NAME_REGEX, $header) !== 1) {
+                        $found[] = $message('header_name_invalid', [':name' => $header]);
+                    } elseif (strcasecmp($header, $mainName) === 0) {
+                        $found[] = $message('header_extra_name_already_sent', [':name' => $header]);
+                    }
+
+                    // A value is one line of text: a control character other
+                    // than a tab, or DEL, could split the header.
+                    if (! is_string($value) || preg_match('~[\x00-\x08\x0A-\x1F\x7F]~', $value) === 1) {
+                        $found[] = $message('header_extra_value_invalid', [':name' => $header]);
+
+                        continue;
+                    }
+
+                    preg_match_all(CredentialFields::PLACEHOLDER_REGEX, $value, $matches);
+                    foreach ($matches[1] as $field) {
+                        if (! isset($parts[$field])) {
+                            $found[] = $message('header_extra_field_unknown', [
+                                ':name' => $header,
+                                ':field' => $field,
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * The keys of the connector's `credential_parts`, which a basic user and an
+     * extra header's placeholders may name.
+     *
+     * @param  array<string, mixed>  $descriptor
+     * @return array<string, true>
+     */
+    private static function partKeys(array $descriptor): array
+    {
+        $keys = [];
+        $parts = $descriptor['credential_parts'] ?? null;
+        if (is_array($parts)) {
+            foreach ($parts as $part) {
+                if (is_array($part) && is_string($part['key'] ?? null) && trim($part['key']) !== '') {
+                    $keys[trim($part['key'])] = true;
+                }
+            }
+        }
+
+        return $keys;
+    }
+
+    /**
+     * A value as a sentence shows it.
+     */
+    private static function shown(mixed $value): string
+    {
+        if (is_string($value)) {
+            return $value;
+        }
+
+        $json = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        return is_string($json) ? $json : get_debug_type($value);
     }
 
     /**

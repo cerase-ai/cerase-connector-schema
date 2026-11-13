@@ -144,6 +144,18 @@ final class Labels
             'violation.host_any_not_alone' => 'hosts: * already means any host, so it is the only entry.',
             'violation.host_duplicate' => 'hosts › :host: named twice.',
             'violation.host_field_unknown' => 'hosts › :host: :field is not a field of this connector declared secret: false.',
+            'violation.header_only_with_header_delivery' => 'auth.header: only a connector whose key is sent in a header (delivery: header) declares how it is sent.',
+            'violation.header_not_a_mapping' => 'auth.header must be a mapping of name, scheme, basic_user and extra.',
+            'violation.header_key_unknown' => 'auth.header: :key is not one of name, scheme, basic_user and extra.',
+            'violation.header_name_invalid' => 'auth.header › :name: a header name is letters, digits and ! # $ % & \' * + - . ^ _ ` | ~, with no space or line break.',
+            'violation.header_scheme_unknown' => 'auth.header › scheme: :scheme is not one of bearer, bare and basic.',
+            'violation.header_basic_user_required' => 'auth.header: scheme basic names the field that holds the user (basic_user).',
+            'violation.header_basic_user_only_with_basic' => 'auth.header: basic_user is read only with scheme: basic.',
+            'violation.header_basic_user_unknown' => 'auth.header › basic_user: :field is not a field of this connector (credential_parts).',
+            'violation.header_extra_not_a_mapping' => 'auth.header › extra must be a mapping of header names to values.',
+            'violation.header_extra_value_invalid' => 'auth.header › :name: the value is text on one line.',
+            'violation.header_extra_name_already_sent' => 'auth.header › extra › :name: names a header already sent.',
+            'violation.header_extra_field_unknown' => 'auth.header › extra › :name: :field is not a field of this connector (credential_parts).',
         ];
     }
 
@@ -256,6 +268,18 @@ final class Labels
             'violation.host_any_not_alone' => 'hosts: * vuol già dire qualunque host, quindi è l\'unica voce.',
             'violation.host_duplicate' => 'hosts › :host: compare due volte.',
             'violation.host_field_unknown' => 'hosts › :host: :field non è un campo di questo connettore dichiarato secret: false.',
+            'violation.header_only_with_header_delivery' => 'auth.header: solo un connettore la cui chiave viaggia in un header (delivery: header) dichiara come la invia.',
+            'violation.header_not_a_mapping' => 'auth.header dev\'essere una mappa di name, scheme, basic_user ed extra.',
+            'violation.header_key_unknown' => 'auth.header: :key non è fra name, scheme, basic_user ed extra.',
+            'violation.header_name_invalid' => 'auth.header › :name: un nome di header è composto da lettere, cifre e ! # $ % & \' * + - . ^ _ ` | ~, senza spazi né interruzioni di riga.',
+            'violation.header_scheme_unknown' => 'auth.header › scheme: :scheme non è fra bearer, bare e basic.',
+            'violation.header_basic_user_required' => 'auth.header: lo scheme basic nomina il campo che contiene l\'utente (basic_user).',
+            'violation.header_basic_user_only_with_basic' => 'auth.header: basic_user si legge solo con scheme: basic.',
+            'violation.header_basic_user_unknown' => 'auth.header › basic_user: :field non è un campo di questo connettore (credential_parts).',
+            'violation.header_extra_not_a_mapping' => 'auth.header › extra dev\'essere una mappa di nomi di header in valori.',
+            'violation.header_extra_value_invalid' => 'auth.header › :name: il valore è testo su una sola riga.',
+            'violation.header_extra_name_already_sent' => 'auth.header › extra › :name: nomina un header già inviato.',
+            'violation.header_extra_field_unknown' => 'auth.header › extra › :name: :field non è un campo di questo connettore (credential_parts).',
         ];
     }
 }
