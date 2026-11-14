@@ -13,7 +13,8 @@ use PHPUnit\Framework\TestCase;
  * header name, the scheme that wraps the key, the field holding a basic user,
  * and any fixed extra headers built from the connector's fields. Only a
  * connector delivered by header declares a block at all, and every defect is
- * reported as one sentence.
+ * reported as one sentence. A block may not name a header the transport or the
+ * platform sets.
  */
 final class HeaderRulesTest extends TestCase
 {
@@ -67,6 +68,16 @@ final class HeaderRulesTest extends TestCase
         return 'auth.header › extra › '.$header.': '.$field.' is not a field of this connector (credential_parts).';
     }
 
+    private static function transportHeader(string $name): string
+    {
+        return 'auth.header › '.$name.': the transport sets this header on every request, so a connector cannot declare it.';
+    }
+
+    private static function platformHeader(string $name): string
+    {
+        return 'auth.header › '.$name.': a header starting with X-Cerase- belongs to the platform.';
+    }
+
     /**
      * @return iterable<string, array{array<string, mixed>}>
      */
@@ -118,6 +129,19 @@ final class HeaderRulesTest extends TestCase
         yield 'no delivery declared means header' => [[
             'credential_delivery' => null,
             'auth_header' => ['name' => 'x-api-key', 'scheme' => 'bare'],
+            'credential_parts' => null,
+        ]];
+
+        yield 'names that only resemble reserved ones' => [[
+            'credential_delivery' => 'header',
+            'auth_header' => [
+                'name' => 'X-Host',
+                'scheme' => 'bare',
+                'extra' => [
+                    'X-Ceraseful' => 'a',
+                    'Accept-Language' => 'it',
+                ],
+            ],
             'credential_parts' => null,
         ]];
     }
@@ -284,6 +308,60 @@ final class HeaderRulesTest extends TestCase
             'auth_header' => ['prefix' => 'Bearer', 'scheme' => 'token'],
             'credential_parts' => null,
         ], [self::UNKNOWN_KEY, self::UNKNOWN_SCHEME]];
+
+        yield 'a name set by the transport' => [[
+            'credential_delivery' => 'header',
+            'auth_header' => ['name' => 'Host'],
+            'credential_parts' => null,
+        ], [self::transportHeader('Host')]];
+
+        yield 'a transport name in lower case' => [[
+            'credential_delivery' => 'header',
+            'auth_header' => ['name' => 'mcp-session-id'],
+            'credential_parts' => null,
+        ], [self::transportHeader('mcp-session-id')]];
+
+        yield 'an extra header set by the transport' => [[
+            'credential_delivery' => 'header',
+            'auth_header' => [
+                'scheme' => 'bare',
+                'extra' => ['Mcp-Session-Id' => 'x'],
+            ],
+            'credential_parts' => null,
+        ], [self::transportHeader('Mcp-Session-Id')]];
+
+        yield 'an extra protocol header set by the transport' => [[
+            'credential_delivery' => 'header',
+            'auth_header' => [
+                'scheme' => 'bare',
+                'extra' => ['MCP-Protocol-Version' => '2025-06-18'],
+            ],
+            'credential_parts' => null,
+        ], [self::transportHeader('MCP-Protocol-Version')]];
+
+        yield 'an extra content type set by the transport' => [[
+            'credential_delivery' => 'header',
+            'auth_header' => [
+                'scheme' => 'bare',
+                'extra' => ['content-type' => 'text/plain'],
+            ],
+            'credential_parts' => null,
+        ], [self::transportHeader('content-type')]];
+
+        yield 'a name owned by the platform' => [[
+            'credential_delivery' => 'header',
+            'auth_header' => ['name' => 'X-Cerase-Runner-Token'],
+            'credential_parts' => null,
+        ], [self::platformHeader('X-Cerase-Runner-Token')]];
+
+        yield 'an extra header owned by the platform' => [[
+            'credential_delivery' => 'header',
+            'auth_header' => [
+                'scheme' => 'bare',
+                'extra' => ['x-cerase-agent' => 'a'],
+            ],
+            'credential_parts' => null,
+        ], [self::platformHeader('x-cerase-agent')]];
     }
 
     /**
@@ -312,5 +390,31 @@ final class HeaderRulesTest extends TestCase
     {
         self::assertSame(['bearer', 'bare', 'basic'], Rules::HEADER_SCHEMES);
         self::assertSame('Authorization', Rules::HEADER_DEFAULT_NAME);
+        self::assertContains('Host', Rules::HEADERS_SET_BY_TRANSPORT);
+        self::assertContains('Mcp-Session-Id', Rules::HEADERS_SET_BY_TRANSPORT);
+        self::assertSame('X-Cerase-', Rules::PLATFORM_HEADER_PREFIX);
+    }
+
+    public function test_a_transport_header_reads_as_a_sentence_in_italian(): void
+    {
+        self::assertSame(
+            ['auth.header › Host: questo header lo imposta il trasporto a ogni richiesta, quindi un connettore non può dichiararlo.'],
+            Rules::headerViolations([
+                'credential_delivery' => 'header',
+                'auth_header' => ['name' => 'Host'],
+                'credential_parts' => null,
+            ], 'it'),
+        );
+    }
+
+    public function test_a_reserved_header_is_named_by_the_list_or_the_platform_prefix(): void
+    {
+        foreach (['host', 'MCP-SESSION-ID', 'Last-Event-ID', 'x-cerase-runner-token'] as $name) {
+            self::assertTrue(Rules::isReservedHeader($name), $name);
+        }
+
+        foreach (['x-api-key', 'wix-account-id', 'Authorization', 'X-Host'] as $name) {
+            self::assertFalse(Rules::isReservedHeader($name), $name);
+        }
     }
 }

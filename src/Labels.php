@@ -156,6 +156,8 @@ final class Labels
             'violation.header_extra_value_invalid' => 'auth.header › :name: the value is text on one line.',
             'violation.header_extra_name_already_sent' => 'auth.header › extra › :name: names a header already sent.',
             'violation.header_extra_field_unknown' => 'auth.header › extra › :name: :field is not a field of this connector (credential_parts).',
+            'violation.header_set_by_transport' => 'auth.header › :name: the transport sets this header on every request, so a connector cannot declare it.',
+            'violation.header_platform_reserved' => 'auth.header › :name: a header starting with X-Cerase- belongs to the platform.',
         ];
     }
 
@@ -280,6 +282,8 @@ final class Labels
             'violation.header_extra_value_invalid' => 'auth.header › :name: il valore è testo su una sola riga.',
             'violation.header_extra_name_already_sent' => 'auth.header › extra › :name: nomina un header già inviato.',
             'violation.header_extra_field_unknown' => 'auth.header › extra › :name: :field non è un campo di questo connettore (credential_parts).',
+            'violation.header_set_by_transport' => 'auth.header › :name: questo header lo imposta il trasporto a ogni richiesta, quindi un connettore non può dichiararlo.',
+            'violation.header_platform_reserved' => 'auth.header › :name: un header che inizia con X-Cerase- è della piattaforma.',
         ];
     }
 }

@@ -64,6 +64,20 @@ final class Rules
     public const HEADER_NAME_REGEX = '~\A[!#$%&\'*+\-.^_`|\~0-9A-Za-z]+\z~';
 
     /**
+     * The headers the HTTP client and the MCP transport set on every request to
+     * a connector: framing and connection, content negotiation, MCP's session
+     * and protocol version. A block naming one would replace what the transport
+     * decided.
+     */
+    public const HEADERS_SET_BY_TRANSPORT = ['Host', 'Content-Length', 'Transfer-Encoding', 'Connection', 'Keep-Alive', 'Upgrade', 'TE', 'Trailer', 'Expect', 'Proxy-Authorization', 'Proxy-Connection', 'Accept', 'Accept-Encoding', 'Content-Type', 'User-Agent', 'Mcp-Session-Id', 'MCP-Protocol-Version', 'Last-Event-ID'];
+
+    /**
+     * Headers with this prefix are the platform's own, such as the runner
+     * token.
+     */
+    public const PLATFORM_HEADER_PREFIX = 'X-Cerase-';
+
+    /**
      * Cross-field violation: `credential_delivery` is `env` but no
      * `credential_env` (the env-var NAME) was given — the per-connection runner
      * is spawned fail-closed and can never receive its credential.
@@ -374,6 +388,21 @@ final class Rules
     }
 
     /**
+     * Whether a connector's `auth_header` block may not name this header: the
+     * transport sets it on every request, or it belongs to the platform.
+     */
+    public static function isReservedHeader(string $name): bool
+    {
+        foreach (self::HEADERS_SET_BY_TRANSPORT as $reserved) {
+            if (strcasecmp($name, $reserved) === 0) {
+                return true;
+            }
+        }
+
+        return stripos($name, self::PLATFORM_HEADER_PREFIX) === 0;
+    }
+
+    /**
      * Every reason a header-delivery connector's `auth_header` block cannot be
      * read, one sentence each, in English or Italian.
      *
@@ -422,6 +451,10 @@ final class Rules
             $name = $block['name'];
             if (is_string($name) && preg_match(self::HEADER_NAME_REGEX, $name) === 1) {
                 $mainName = $name;
+                $reserved = self::reservedHeaderMessage($name, $message);
+                if ($reserved !== null) {
+                    $found[] = $reserved;
+                }
             } else {
                 $found[] = $message('header_name_invalid', [':name' => self::shown($name)]);
             }
@@ -458,6 +491,11 @@ final class Rules
                         $found[] = $message('header_name_invalid', [':name' => $header]);
                     } elseif (strcasecmp($header, $mainName) === 0) {
                         $found[] = $message('header_extra_name_already_sent', [':name' => $header]);
+                    } else {
+                        $reserved = self::reservedHeaderMessage($header, $message);
+                        if ($reserved !== null) {
+                            $found[] = $reserved;
+                        }
                     }
 
                     // A value is one line of text: a control character other
@@ -482,6 +520,21 @@ final class Rules
         }
 
         return $found;
+    }
+
+    /**
+     * The sentence for a header the transport or the platform sets, or null
+     * when the name is free.
+     */
+    private static function reservedHeaderMessage(string $name, Closure $message): ?string
+    {
+        if (stripos($name, self::PLATFORM_HEADER_PREFIX) === 0) {
+            return $message('header_platform_reserved', [':name' => $name]);
+        }
+
+        return self::isReservedHeader($name)
+            ? $message('header_set_by_transport', [':name' => $name])
+            : null;
     }
 
     /**

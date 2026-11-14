@@ -134,6 +134,7 @@ Rules::authKindRule('it');                 // Laravel rule closure refusing an u
 Rules::fieldViolations($descriptor);       // list of {code, list, key, detail}
 Rules::fieldViolationMessage($violation, 'it');  // one violation as a sentence
 Rules::headerViolations($descriptor);      // list<string> of sentences, empty = valid
+Rules::isReservedHeader($name);            // bool: a header the transport or the platform sets
 ```
 
 The command rule allows no quoting, pipes, redirection, substitution or
@@ -214,8 +215,10 @@ header:
 No block means `Authorization: Bearer <key>`. The key is the `credential_parts`
 field marked `secret: true`. `Rules::headerViolations($descriptor)` refuses a
 block outside `delivery: header`, an unknown scheme, a `basic` block without
-`basic_user`, a name or value that could split a header, and a placeholder
-naming no declared part.
+`basic_user`, a name or value that could split a header, a placeholder
+naming no declared part, a header the transport sets on every request
+(`Rules::HEADERS_SET_BY_TRANSPORT`, such as `Host` or `Mcp-Session-Id`) and a
+header starting with `X-Cerase-`.
 
 ## The approval declaration
 
