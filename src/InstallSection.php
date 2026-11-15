@@ -10,6 +10,8 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 
@@ -167,6 +169,51 @@ final class InstallSection
                 }
                 $field->disabled($disabled);
             }
+        }
+
+        if ($config->isOfferingState()) {
+            $stateFields = [
+                TextInput::make('path')
+                    ->label($config->label('install.state.path.label'))
+                    ->helperText($config->label('install.state.path.helper'))
+                    ->columnSpanFull()
+                    ->rule(fn (Get $get): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get, $config): void {
+                        $descriptor = [
+                            'install_mode' => $get('../install_mode'),
+                            'install_image' => $get('../install_image'),
+                            'install_command' => $get('../install_command'),
+                            'install_remote_url' => $get('../install_remote_url'),
+                            'install_state' => State::normalize([
+                                'path' => $value,
+                                'max_mb' => $get('max_mb'),
+                                'keep_running' => $get('keep_running'),
+                            ]),
+                            'auth_kind' => $get('../auth_kind'),
+                            'credential_delivery' => $get('../credential_delivery'),
+                        ];
+                        foreach (State::violations($descriptor, $config->getLocale()) as $violation) {
+                            $fail($violation);
+                        }
+                    }),
+                TextInput::make('max_mb')
+                    ->label($config->label('install.state.max_mb.label'))
+                    ->numeric(),
+                Toggle::make('keep_running')
+                    ->label($config->label('install.state.keep_running.label'))
+                    ->default(false),
+            ];
+
+            if (($disabled = $config->getDisabledWhen()) !== null) {
+                foreach ($stateFields as $field) {
+                    $field->disabled($disabled);
+                }
+            }
+
+            $fields[] = Fieldset::make($config->label('install.state.label'))
+                ->statePath(State::KEY)
+                ->columns(2)
+                ->schema($stateFields)
+                ->visible(fn (Get $get): bool => $get('install_mode') === 'image');
         }
 
         $section = Section::make($config->label('install.title'))

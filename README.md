@@ -35,6 +35,9 @@ management plane.
   (`BatchLimits`).
 - **Hosts** — the shape of a connector's `hosts` list, which says which hosts
   its runner reaches outside the platform (`Hosts`).
+- **State** — the shape of a connector's `install_state` block, the one
+  directory it keeps across a recreated container, how large it may grow and
+  whether the server stays running (`State`).
 - **Labels** in English and Italian (`Labels::LOCALES`).
 
 The *Identity* section is not here: the Marketplace keys a package by

@@ -39,6 +39,7 @@ final class ConnectorSchemaConfig
         private bool $strictCrossField = false,
         private ?Closure $disabledWhen = null,
         private bool $publishedByOthers = false,
+        private bool $offeringState = false,
     ) {}
 
     public static function make(): self
@@ -102,6 +103,17 @@ final class ConnectorSchemaConfig
     }
 
     /**
+     * Offer the optional state block: the one directory a connector keeps
+     * across a recreated container. Off by default, so the control-plane's
+     * custom-connector form does not offer it; the Marketplace's publishing
+     * form opts in.
+     */
+    public function offersState(bool $enabled = true): self
+    {
+        return $this->with(offeringState: $enabled);
+    }
+
+    /**
      * Disable EVERY field of the Authentication + Install sections when the
      * predicate is truthy. The control-plane locks a custom connector's
      * descriptor after creation (the fields are immutable post-install), so it
@@ -150,6 +162,11 @@ final class ConnectorSchemaConfig
     public function isPublishedByOthers(): bool
     {
         return $this->publishedByOthers;
+    }
+
+    public function isOfferingState(): bool
+    {
+        return $this->offeringState;
     }
 
     /**
@@ -235,6 +252,7 @@ final class ConnectorSchemaConfig
         ?bool $strictCrossField = null,
         ?Closure $disabledWhen = null,
         ?bool $publishedByOthers = null,
+        ?bool $offeringState = null,
     ): self {
         $clone = new self(
             $installModes ?? $this->installModes,
@@ -243,6 +261,7 @@ final class ConnectorSchemaConfig
             $strictCrossField ?? $this->strictCrossField,
             $this->disabledWhen,
             $publishedByOthers ?? $this->publishedByOthers,
+            $offeringState ?? $this->offeringState,
         );
 
         // A null closure means "unchanged" (we can't distinguish "clear it"

@@ -128,6 +128,47 @@ final class ConnectorSchemaConfigTest extends TestCase
         self::assertSame('it', $published->getLocale());
     }
 
+    public function test_state_is_not_offered_by_default(): void
+    {
+        self::assertFalse(ConnectorSchemaConfig::make()->isOfferingState());
+    }
+
+    public function test_state_can_be_offered(): void
+    {
+        self::assertTrue(ConnectorSchemaConfig::make()->offersState()->isOfferingState());
+        self::assertFalse(ConnectorSchemaConfig::make()->offersState(false)->isOfferingState());
+    }
+
+    public function test_state_offer_returns_a_fresh_config_and_keeps_the_other_settings(): void
+    {
+        $base = ConnectorSchemaConfig::make()
+            ->installModes(['remote_url', 'image'])
+            ->locale('it');
+
+        $offering = $base->offersState();
+
+        self::assertFalse($base->isOfferingState());
+        self::assertTrue($offering->isOfferingState());
+        self::assertSame(['remote_url', 'image'], $offering->getInstallModes());
+        self::assertSame('it', $offering->getLocale());
+    }
+
+    public function test_state_offer_is_carried_across_other_setters(): void
+    {
+        $lock = static fn (string $operation): bool => $operation !== 'create';
+
+        $config = ConnectorSchemaConfig::make()
+            ->offersState()
+            ->locale('it')
+            ->withoutNoneMode()
+            ->disabledWhen($lock);
+
+        self::assertTrue($config->isOfferingState());
+        self::assertSame('it', $config->getLocale());
+        self::assertSame(['remote_url', 'command', 'image'], $config->getInstallModes());
+        self::assertSame($lock, $config->getDisabledWhen());
+    }
+
     public function test_locale_switches_the_catalog(): void
     {
         $it = ConnectorSchemaConfig::make()->locale('it');
