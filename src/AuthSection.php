@@ -6,8 +6,10 @@ namespace Cerase\ConnectorSchema;
 
 use Closure;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 
@@ -66,6 +68,38 @@ final class AuthSection
                 ->columnSpanFull()
                 ->visible(fn (Get $get): bool => in_array($get('auth_kind'), ['bearer', 'oauth2'], true)),
         ];
+
+        // How a sign-in in the connector's own browser runs: the arguments its
+        // image takes and the port it serves the person's page on.
+        $fields[] = Group::make()
+            ->statePath(Login::KEY)
+            ->columns(2)
+            ->schema([
+                TagsInput::make('args')
+                    ->label($config->label('login.args.label'))
+                    ->helperText($config->label('login.args.helper'))
+                    ->required()
+                    ->rule(fn (Get $get): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get, $config): void {
+                        $descriptor = [
+                            'auth_kind' => $get('../auth_kind'),
+                            'install_mode' => $get('../install_mode'),
+                            'install_image' => $get('../install_image'),
+                            'install_state' => $get('../install_state'),
+                            'auth_login' => Login::normalize([
+                                'args' => $value,
+                                'port' => $get('port'),
+                            ]),
+                        ];
+                        foreach (Login::violations($descriptor, $config->getLocale()) as $violation) {
+                            $fail($violation);
+                        }
+                    }),
+                TextInput::make('port')
+                    ->label($config->label('login.port.label'))
+                    ->helperText($config->label('login.port.helper'))
+                    ->numeric(),
+            ])
+            ->visible(fn (Get $get): bool => $get('auth_kind') === 'browser');
 
         // The control-plane locks the descriptor after creation.
         // OFF by default → the marketplace keeps every field editable.

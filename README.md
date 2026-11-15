@@ -38,6 +38,9 @@ management plane.
 - **State** — the shape of a connector's `install_state` block, the one
   directory it keeps across a recreated container, how large it may grow and
   whether the server stays running (`State`).
+- **Login** — the shape of a connector's `auth_login` block, which says how a
+  sign-in made in the connector's own browser runs, and the rules that check it
+  (`Login`).
 - **Labels** in English and Italian (`Labels::LOCALES`).
 
 The *Identity* section is not here: the Marketplace keys a package by
@@ -151,8 +154,8 @@ keeps an image reference from breaking out of the `docker` argument.
   blank;
 - `credential_env_required` — `credential_delivery` is `env` and
   `credential_env` is blank;
-- `auth_kind_not_served` — `auth_kind` is a kind no consumer can connect yet
-  (`browser` today), refused on the form whatever `strictCrossField()` says.
+- `auth_kind_not_served` — `auth_kind` is a kind no consumer can connect yet,
+  refused on the form whatever `strictCrossField()` says.
 
 The first two are off by default on the form; both applications turn them on.
 The last is always refused.

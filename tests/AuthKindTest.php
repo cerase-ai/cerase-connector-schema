@@ -14,17 +14,17 @@ use ReflectionFunction;
 use ReflectionMethod;
 
 /**
- * The fourth auth kind, `browser`, is declared but not served: a publisher can
- * say its connector needs a login the person makes in the connector's own
- * browser, and the schema refuses it because no consumer can connect such a
- * login yet.
+ * The fourth auth kind, `browser`, is declared and served: a publisher can say
+ * its connector needs a login the person makes in the connector's own browser,
+ * and the schema lets a consumer connect it. A declared kind no consumer serves
+ * is still refused, checked with a synthetic list of served kinds.
  */
 final class AuthKindTest extends TestCase
 {
     public function test_the_declared_and_served_auth_kinds_are_pinned(): void
     {
         self::assertSame(['none', 'bearer', 'oauth2', 'browser'], Rules::AUTH_KINDS);
-        self::assertSame(['none', 'bearer', 'oauth2'], Rules::AUTH_KINDS_SERVED);
+        self::assertSame(['none', 'bearer', 'oauth2', 'browser'], Rules::AUTH_KINDS_SERVED);
     }
 
     public function test_every_locale_offers_every_auth_kind_in_order(): void
@@ -46,12 +46,26 @@ final class AuthKindTest extends TestCase
         }
     }
 
-    public function test_the_browser_auth_kind_is_refused(): void
+    public function test_the_browser_auth_kind_is_served(): void
     {
         self::assertSame('auth_kind_not_served', Rules::VIOLATION_AUTH_KIND_NOT_SERVED);
+        self::assertSame([], Rules::crossFieldViolations(['auth_kind' => 'browser']));
+    }
+
+    public function test_a_declared_kind_no_consumer_serves_is_still_refused(): void
+    {
+        // A synthetic list of served kinds, so the not-served machinery is
+        // still exercised now that every declared kind is served.
+        $served = ['none', 'bearer', 'oauth2'];
+
         self::assertSame(
             [Rules::VIOLATION_AUTH_KIND_NOT_SERVED],
-            Rules::crossFieldViolations(['auth_kind' => 'browser']),
+            Rules::crossFieldViolations(['auth_kind' => 'browser'], $served),
+        );
+
+        self::assertSame(
+            [],
+            Rules::crossFieldViolations(['auth_kind' => 'browser'], [...$served, 'browser']),
         );
     }
 
@@ -110,7 +124,7 @@ final class AuthKindTest extends TestCase
         );
     }
 
-    public function test_the_auth_kind_rule_refuses_browser_in_every_locale(): void
+    public function test_the_auth_kind_rule_accepts_every_declared_kind_in_every_locale(): void
     {
         foreach (Labels::LOCALES as $locale) {
             $rule = Rules::authKindRule($locale);
@@ -129,15 +143,7 @@ final class AuthKindTest extends TestCase
                 $failures[] = $message;
             };
 
-            $rule('auth_kind', 'browser', $fail);
-
-            self::assertSame(
-                [Rules::crossFieldViolationMessage(Rules::VIOLATION_AUTH_KIND_NOT_SERVED, $locale)],
-                $failures,
-                "browser must be refused exactly once in {$locale}",
-            );
-
-            foreach (Rules::AUTH_KINDS_SERVED as $kind) {
+            foreach (Rules::AUTH_KINDS as $kind) {
                 $failures = [];
                 $rule('auth_kind', $kind, $fail);
 
@@ -148,6 +154,35 @@ final class AuthKindTest extends TestCase
             $rule('auth_kind', null, $fail);
 
             self::assertSame([], $failures, "a missing auth_kind must not be refused in {$locale}");
+        }
+    }
+
+    public function test_the_auth_kind_rule_still_refuses_a_kind_no_consumer_serves(): void
+    {
+        foreach (Labels::LOCALES as $locale) {
+            // A synthetic list of served kinds: browser is declared but not
+            // served, so the not-served branch is still exercised.
+            $notServed = ['none', 'bearer', 'oauth2'];
+
+            $failures = [];
+            $fail = function (string $message) use (&$failures): void {
+                $failures[] = $message;
+            };
+
+            $rule = Rules::authKindRule($locale, $notServed);
+            $rule('auth_kind', 'browser', $fail);
+
+            self::assertSame(
+                [Rules::crossFieldViolationMessage(Rules::VIOLATION_AUTH_KIND_NOT_SERVED, $locale)],
+                $failures,
+                "a kind no consumer serves must be refused in {$locale}",
+            );
+
+            $failures = [];
+            $served = Rules::authKindRule($locale, [...$notServed, 'browser']);
+            $served('auth_kind', 'browser', $fail);
+
+            self::assertSame([], $failures, "a served browser must not be refused in {$locale}");
         }
     }
 

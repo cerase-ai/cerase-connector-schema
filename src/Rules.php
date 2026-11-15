@@ -41,7 +41,7 @@ final class Rules
      * the consumers can serve it, by a release of this library — until then a
      * connector that needs it is refused rather than installed unusable.
      */
-    public const AUTH_KINDS_SERVED = ['none', 'bearer', 'oauth2'];
+    public const AUTH_KINDS_SERVED = ['none', 'bearer', 'oauth2', 'browser'];
 
     /**
      * The schemes that wrap a header-delivered key: `bearer` sends
@@ -227,10 +227,14 @@ final class Rules
      *   - {@see VIOLATION_AUTH_KIND_NOT_SERVED}: `auth_kind` is a declared kind
      *     no consumer can connect yet.
      *
+     * The served kinds default to {@see AUTH_KINDS_SERVED}; a caller may pass
+     * a synthetic list to exercise the not-served branch.
+     *
      * @param  array<string, mixed>  $descriptor
+     * @param  list<string>  $served
      * @return list<string>
      */
-    public static function crossFieldViolations(array $descriptor): array
+    public static function crossFieldViolations(array $descriptor, array $served = self::AUTH_KINDS_SERVED): array
     {
         $violations = [];
 
@@ -247,7 +251,7 @@ final class Rules
         $kind = $descriptor['auth_kind'] ?? null;
         if (is_string($kind)
             && in_array($kind, self::AUTH_KINDS, true)
-            && ! in_array($kind, self::AUTH_KINDS_SERVED, true)) {
+            && ! in_array($kind, $served, true)) {
             $violations[] = self::VIOLATION_AUTH_KIND_NOT_SERVED;
         }
 
@@ -268,13 +272,18 @@ final class Rules
     /**
      * The Laravel validation closure that refuses an auth kind no consumer can
      * connect yet, with the same sentence the server-side callers use.
+     *
+     * The served kinds default to {@see AUTH_KINDS_SERVED}; a caller may pass
+     * a synthetic list to exercise the not-served branch.
+     *
+     * @param  list<string>  $served
      */
-    public static function authKindRule(string $locale = 'en'): Closure
+    public static function authKindRule(string $locale = 'en', array $served = self::AUTH_KINDS_SERVED): Closure
     {
-        return function (string $attribute, mixed $value, Closure $fail) use ($locale): void {
+        return function (string $attribute, mixed $value, Closure $fail) use ($locale, $served): void {
             if (is_string($value)
                 && in_array($value, self::AUTH_KINDS, true)
-                && ! in_array($value, self::AUTH_KINDS_SERVED, true)) {
+                && ! in_array($value, $served, true)) {
                 $fail(self::crossFieldViolationMessage(self::VIOLATION_AUTH_KIND_NOT_SERVED, $locale));
             }
         };
