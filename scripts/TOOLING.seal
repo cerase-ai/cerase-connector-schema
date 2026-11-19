@@ -1,4 +1,4 @@
 # The digest of scripts/TOOLING.sha256 as cerase-core wrote it — DO NOT EDIT either file here.
 # Re-sync from cerase-core:  ./scripts/sync-tooling.sh
 # CI checks both in one command, so a pin line deleted or rewritten here fails it.
-8806b1325c906b1fdf7d202854c335a1abef63f2de06c6c2c8d104c6323624dc  scripts/TOOLING.sha256
+6f768296152f6906be7b768fb8a1cedd0e8f82e0956776553df80c5a0d489884  scripts/TOOLING.sha256
