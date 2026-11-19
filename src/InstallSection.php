@@ -122,6 +122,30 @@ final class InstallSection
                             $fail($violation);
                         }
                     }),
+                TextInput::make(Memory::KEY)
+                    ->label($config->label('install.memory_mb.label'))
+                    ->helperText($config->label('install.memory_mb.helper'))
+                    ->numeric()
+                    ->visible(fn (Get $get): bool => in_array($get('install_mode'), Hosts::RUNNER_MODES, true))
+                    ->dehydrateStateUsing(fn (mixed $state): ?int => Memory::normalize($state))
+                    ->rule(fn (Get $get): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get, $config): void {
+                        // A non-blank string that is not a whole number (such as
+                        // a decimal) must reach the rule as it was typed, or it
+                        // would read as absent and pass silently.
+                        $memory = Memory::normalize($value);
+                        if ($memory === null && is_string($value) && trim($value) !== '') {
+                            $memory = $value;
+                        }
+                        $descriptor = [
+                            'install_mode' => $get('install_mode'),
+                            'install_image' => $get('install_image'),
+                            'install_command' => $get('install_command'),
+                            Memory::KEY => $memory,
+                        ];
+                        foreach (Memory::violations($descriptor, $config->getLocale()) as $violation) {
+                            $fail($violation);
+                        }
+                    }),
                 Select::make('credential_delivery')
                     ->label($config->label('credential.delivery.label'))
                     ->options($config->options('credential.delivery.options'))

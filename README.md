@@ -21,9 +21,9 @@ management plane.
   `auth_provider`, `auth_instructions`.
 - **Install section** — `install_mode`, `install_remote_url`,
   `install_command`, `install_image`, `install_env_passthrough`, `hosts`,
-  `credential_delivery`, `credential_env`, `credential_scope`, `scopes`,
-  `credential_files`, and the two field lists `credential_parts` and
-  `provider_fields`.
+  `install_memory_mb`, `credential_delivery`, `credential_env`,
+  `credential_scope`, `scopes`, `credential_files`, and the two field lists
+  `credential_parts` and `provider_fields`.
 - **Rules** — the format rules for the install command and image reference,
   the cross-field rules, and the rules every declared field obeys, as pure PHP
   functions any server-side path can call.
@@ -38,6 +38,11 @@ management plane.
 - **State** — the shape of a connector's `install_state` block, the one
   directory it keeps across a recreated container, how large it may grow and
   whether the server stays running (`State`).
+- **Memory** — the optional `install_memory_mb`, a whole number of megabytes
+  from 256 to 4096 that the connector's container gets for its runner and for
+  its browser sign-in; absent means the platform's default, 512 MB today;
+  valid on a connector installed with a command or an image, a violation on
+  one reached at its own address (`Memory`).
 - **Login** — the shape of a connector's `auth_login` block, which says how a
   sign-in made in the connector's own browser runs, and the rules that check it
   (`Login`).
@@ -315,6 +320,27 @@ through the runner's networks and are never listed. The form field stays
 editable when `disabledWhen` locks the rest. An empty field in a form is
 stored as `[]`, a declaration that the runner reaches nothing outside the
 platform.
+
+## The memory a container gets
+
+`install_memory_mb` is the memory a connector's container gets, in megabytes,
+for its runner and for its browser sign-in.
+
+```yaml
+install_memory_mb: 512         # optional; the platform default is 512 MB today
+```
+
+```php
+use Cerase\ConnectorSchema\Memory;
+
+Memory::violations($descriptor, 'it');  // list<string>, empty = valid
+Memory::normalize($formState);          // ?int as stored
+```
+
+The value is a whole number of megabytes from 256 to 4096. Absent means the
+platform's default, 512 MB today. It is valid on a connector installed with a
+command or an image, and a violation on one reached at its own address, which
+runs no container.
 
 ## Tests
 
