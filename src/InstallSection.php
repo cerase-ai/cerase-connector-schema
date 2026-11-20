@@ -158,7 +158,7 @@ final class InstallSection
                     ->options($config->options('credential.scope.options'))
                     ->default('user')
                     ->native(false)
-                    ->visible(fn (Get $get): bool => in_array($get('auth_kind'), ['bearer', 'oauth2'], true)),
+                    ->visible(fn (Get $get): bool => in_array($get('auth_kind'), ['bearer', 'oauth2', 'browser'], true)),
                 TagsInput::make('scopes')
                     ->label($config->label('scopes.label'))
                     ->helperText($config->label('scopes.helper'))
