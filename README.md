@@ -44,7 +44,8 @@ management plane.
   valid on a connector installed with a command or an image, a violation on
   one reached at its own address (`Memory`).
 - **Login** — the shape of a connector's `auth_login` block, which says how a
-  sign-in made in the connector's own browser runs, and the rules that check it
+  sign-in made in the connector's own browser runs, the steps the person
+  follows and how long a code it prints lasts, and the rules that check it
   (`Login`).
 - **Labels** in English and Italian (`Labels::LOCALES`).
 
@@ -230,6 +231,52 @@ block outside `delivery: header`, an unknown scheme, a `basic` block without
 naming no declared part, a header the transport sets on every request
 (`Rules::HEADERS_SET_BY_TRANSPORT`, such as `Host` or `Mcp-Session-Id`) and a
 header starting with `X-Cerase-`.
+
+## How a sign-in in the connector's own browser runs
+
+`auth_login` (`auth.login` in a catalogue entry and a `cerase.json`) is declared
+by a connector whose `auth_kind` is `browser`, and only by one. The sign-in runs
+in the connector's own image and is kept in its `install_state`.
+
+```yaml
+auth_login:
+  args: ["--login"]          # the arguments its image runs with for the sign-in
+  port: 6080                 # optional: where it serves the page the person signs in on
+  steps:                     # optional: what the person does, shown above the code
+    it:
+      - Apri l'app Esempio sul telefono.
+      - Tocca Impostazioni → Dispositivi → Collega un dispositivo.
+      - Inquadra il codice qui sotto.
+    en:
+      - Open the Esempio app on your phone.
+      - Tap Settings → Devices → Link a device.
+      - Scan the code below.
+  code_seconds: 160          # optional: how long one printed code lasts
+```
+
+| Key | Rule |
+| --- | --- |
+| `args` | 1 to 8 arguments, each 1 to 100 characters of letters, digits and `_ . / : = @ % + -`. |
+| `port` | A whole number from 1024 to 65535, other than 3000 and 3001. Absent or null when the sign-in prints a QR code instead. |
+| `steps` | A mapping from a language (`en`, `it`, the `Labels::LOCALES`) to its list of steps. `it` is required once `steps` is declared. Each list holds 1 to 8 steps; a step is one line of 1 to 200 characters of plain text, with no `<` and no control character. |
+| `code_seconds` | A whole number from 10 to 900, declared only by a sign-in that prints a code, so with no `port`. |
+
+```php
+use Cerase\ConnectorSchema\Login;
+
+Login::violations($descriptor, 'it');  // list<string>, empty = valid
+Login::normalize($formState);          // the block as stored, or null when nothing is declared
+Login::steps($login, 'en');            // list<string>: the steps in that language, else in Italian
+Login::codeSeconds($login);            // ?int: the declared lifetime of a code
+```
+
+`normalize()` returns `args` and `port`, and adds `steps` and `code_seconds`
+only when they are declared. A form may hold a language's steps as one string of
+lines; `normalize()` splits it, trims each step and drops blank ones. `steps()`
+returns the steps of the language asked for when it is declared, otherwise the
+Italian ones, and nothing when the block breaks a steps rule, so a declaration
+that a consumer did not check never reaches a page. `codeSeconds()` returns null
+unless the value is valid.
 
 ## The approval declaration
 

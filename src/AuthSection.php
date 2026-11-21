@@ -88,6 +88,8 @@ final class AuthSection
                             'auth_login' => Login::normalize([
                                 'args' => $value,
                                 'port' => $get('port'),
+                                'steps' => $get('steps'),
+                                'code_seconds' => $get('code_seconds'),
                             ]),
                         ];
                         foreach (Login::violations($descriptor, $config->getLocale()) as $violation) {
@@ -98,6 +100,22 @@ final class AuthSection
                     ->label($config->label('login.port.label'))
                     ->helperText($config->label('login.port.helper'))
                     ->numeric(),
+                Textarea::make('steps.it')
+                    ->label($config->label('login.steps_it.label'))
+                    ->helperText($config->label('login.steps.helper'))
+                    ->rows(4)
+                    ->columnSpanFull()
+                    ->formatStateUsing(fn (mixed $state): mixed => is_array($state) ? implode("\n", array_map('strval', $state)) : $state),
+                Textarea::make('steps.en')
+                    ->label($config->label('login.steps_en.label'))
+                    ->helperText($config->label('login.steps.helper'))
+                    ->rows(4)
+                    ->columnSpanFull()
+                    ->formatStateUsing(fn (mixed $state): mixed => is_array($state) ? implode("\n", array_map('strval', $state)) : $state),
+                TextInput::make('code_seconds')
+                    ->label($config->label('login.code_seconds.label'))
+                    ->helperText($config->label('login.code_seconds.helper'))
+                    ->integer(),
             ])
             ->visible(fn (Get $get): bool => $get('auth_kind') === 'browser');
 
