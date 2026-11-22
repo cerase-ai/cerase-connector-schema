@@ -66,8 +66,8 @@ final class Labels
             'login.steps_it.label' => 'Steps to sign in, in Italian',
             'login.steps_en.label' => 'Steps to sign in, in English',
             'login.steps.helper' => 'One step per line, plain text: up to 8 lines of 200 characters. The sign-in page shows them above the code, in the console\'s language when declared, otherwise in Italian.',
-            'login.code_seconds.label' => 'Seconds a code lasts',
-            'login.code_seconds.helper' => 'Only for a sign-in that prints a QR code, so with no viewer port: from 10 to 900. The page counts down from the moment each code appears.',
+            'login.code_seconds.label' => 'Seconds to scan the code',
+            'login.code_seconds.helper' => 'Only for a sign-in that prints a QR code, so with no viewer port: from 10 to 900. The page counts down from the moment the first code appears; a new code the connector prints keeps the same countdown unless 15 seconds or fewer were left.',
 
             'install.title' => 'Install',
             'install.description' => 'How the control-plane installs this connector — directly from the registry, no git clone. Pick a mode; the matching field appears.',
@@ -234,8 +234,8 @@ final class Labels
             'login.steps_it.label' => 'Passi per accedere, in italiano',
             'login.steps_en.label' => 'Passi per accedere, in inglese',
             'login.steps.helper' => 'Un passo per riga, testo semplice: fino a 8 righe da 200 caratteri. La pagina di accesso li mostra sopra il codice, nella lingua della console se dichiarata, altrimenti in italiano.',
-            'login.code_seconds.label' => 'Durata di un codice, in secondi',
-            'login.code_seconds.helper' => 'Solo per un accesso che stampa un codice QR, quindi senza porta del visore: da 10 a 900. La pagina conta alla rovescia da quando compare ogni codice.',
+            'login.code_seconds.label' => 'Secondi per inquadrare il codice',
+            'login.code_seconds.helper' => 'Solo per un accesso che stampa un codice QR, quindi senza porta del visore: da 10 a 900. La pagina conta alla rovescia da quando compare il primo codice; un nuovo codice stampato dal connettore mantiene lo stesso conto alla rovescia, a meno che restassero 15 secondi o meno.',
 
             'install.title' => 'Installazione',
             'install.description' => 'Come il control-plane installa questo connettore — direttamente dal registro, senza clonare il repo. Scegli una modalità; compare il campo corrispondente.',
