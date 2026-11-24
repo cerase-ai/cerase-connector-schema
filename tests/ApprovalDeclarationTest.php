@@ -56,6 +56,7 @@ final class ApprovalDeclarationTest extends TestCase
             'approving' => ['execute_tool' => ['toolName' => ['create_*' => 'Crea subito un record', '*' => 'Esegue subito l\'operazione']]],
             'labels' => ['stage' => 'Fase'],
             'unwrap' => ['arguments'],
+            'sections' => ['linkedin', 'x'],
             'amounts_in_micros' => ['amountMicros' => 'currencyCode', 'budgetMicros' => null],
             'choices' => [['fields' => ['stage'], 'values' => ['NEW' => 'Nuova']]],
             'named_ids' => ['companyId' => 'company'],
@@ -106,7 +107,7 @@ final class ApprovalDeclarationTest extends TestCase
             'an unknown key' => [['wording' => []],
                 'approval_display has unknown key(s) [wording] — it takes sentences, outcomes, approving, labels, unwrap, '
                 .'amounts_in_micros, choices, named_ids, linked_to, dates, link, record_names, recipients, attachments, failures, '
-                .'item_failures, plurals'],
+                .'item_failures, plurals, sections'],
             'sentences a list' => [['sentences' => ['Inviare']], 'approval_display.sentences must map a tool to a sentence or to rules'],
             'an empty sentence' => [['sentences' => ['send_email' => ' ']], 'approval_display.sentences.send_email is empty'],
             'what approving does as a list' => [['approving' => ['draft_email' => ['x', 'y']]], 'approval_display.approving.draft_email must be a sentence or rules'],
@@ -116,6 +117,8 @@ final class ApprovalDeclarationTest extends TestCase
             'named ids as a list' => [['named_ids' => ['company']], 'approval_display.named_ids must map a name to words'],
             'a blank link' => [['link' => ['type' => ' ']], 'approval_display.link must map a name to words'],
             'unwrap as a map' => [['unwrap' => ['arguments' => true]], 'approval_display.unwrap must be a list of names'],
+            'sections as a map' => [['sections' => ['linkedin' => 'LinkedIn']], 'approval_display.sections must be a list of names'],
+            'a blank section' => [['sections' => ['linkedin', ' ']], 'approval_display.sections must be a list of names'],
             'a blank name linked to' => [['linked_to' => ['targetCompanyId', '']], 'approval_display.linked_to must be a list of names'],
             'a date that is not a name' => [['dates' => [7]], 'approval_display.dates must be a list of names'],
             'an amount without its currency field' => [['amounts_in_micros' => ['amountMicros']],
@@ -221,7 +224,7 @@ final class ApprovalDeclarationTest extends TestCase
         self::assertSame([
             'sentences', 'outcomes', 'approving', 'labels', 'unwrap', 'amounts_in_micros', 'choices',
             'named_ids', 'linked_to', 'dates', 'link', 'record_names', 'recipients', 'attachments', 'failures',
-            'item_failures', 'plurals',
+            'item_failures', 'plurals', 'sections',
         ], ApprovalDeclaration::KEYS);
         self::assertSame(['to', 'cc', 'bcc'], ApprovalDeclaration::RECIPIENT_ROLES);
     }

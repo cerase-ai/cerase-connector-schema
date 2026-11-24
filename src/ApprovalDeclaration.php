@@ -71,7 +71,7 @@ final class ApprovalDeclaration
     public const KEYS = [
         'sentences', 'outcomes', 'approving', 'labels', 'unwrap', 'amounts_in_micros', 'choices',
         'named_ids', 'linked_to', 'dates', 'link', 'record_names', 'recipients',
-        'attachments', 'failures', 'item_failures', 'plurals',
+        'attachments', 'failures', 'item_failures', 'plurals', 'sections',
     ];
 
     /** The keys of `item_failures`, the ones it cannot do without first. */
@@ -123,7 +123,10 @@ final class ApprovalDeclaration
                 self::words($block[$key], "approval_display.{$key}", $found);
             }
         }
-        foreach (['unwrap', 'linked_to', 'dates'] as $key) {
+        // `sections` names the argument keys whose label prefixes every line
+        // beneath them on an approval card, «LinkedIn › Attiva»: a list of
+        // names, as `unwrap` is.
+        foreach (['unwrap', 'linked_to', 'dates', 'sections'] as $key) {
             if (isset($block[$key])) {
                 self::names($block[$key], "approval_display.{$key}", $found);
             }
