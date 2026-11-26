@@ -89,6 +89,17 @@ final class ApprovalDeclarationTest extends TestCase
         ]));
     }
 
+    public function test_a_read_names_one_kind_by_templates_of_its_own(): void
+    {
+        // A helpdesk ticket's own name carries its number, so the number the
+        // other kinds add after it would read twice.
+        self::assertSame([], ApprovalDeclaration::violations(['record_names' => ['read' => [[
+            'tools' => ['chatter_post'], 'ids' => ['record_id'], 'kind' => '{model}',
+            'with' => 'search_records', 'arguments' => ['model' => '{model}'],
+            'name' => ['helpdesk.ticket' => ['{display_name}'], '*' => ['{display_name} (n. {id})']],
+        ]]]]));
+    }
+
     public function test_a_key_left_empty_is_read_as_not_declared(): void
     {
         self::assertSame([], ApprovalDeclaration::violations(['sentences' => null, 'recipients' => null]));
@@ -165,6 +176,10 @@ final class ApprovalDeclarationTest extends TestCase
                 'approval_display.record_names.read.0.kind must be a word or name an argument of the write, as {argument}'],
             'a read whose fields are not lists' => [['record_names' => ['read' => [['tools' => ['w'], 'ids' => ['ids'], 'kind' => '{model}', 'with' => 'r', 'arguments' => [], 'fields' => ['*' => 'display_name']]]]],
                 'approval_display.record_names.read.0.fields must map a kind to a list of fields'],
+            'a read naming a kind by a template that is not a list' => [['record_names' => ['read' => [['tools' => ['w'], 'ids' => ['ids'], 'kind' => '{model}', 'with' => 'r', 'arguments' => [], 'name' => ['*' => '{display_name}']]]]],
+                'approval_display.record_names.read.0.name must be a list of names, or map a kind to one'],
+            'a read whose name is a word' => [['record_names' => ['read' => [['tools' => ['w'], 'ids' => ['ids'], 'kind' => '{model}', 'with' => 'r', 'arguments' => [], 'name' => '{display_name}']]]],
+                'approval_display.record_names.read.0.name must be a list of names, or map a kind to one'],
             'a read whose tools are not names' => [['record_names' => ['read' => [['tools' => 'w', 'ids' => ['ids'], 'kind' => '{model}', 'with' => 'r', 'arguments' => []]]]],
                 'approval_display.record_names.read.0.tools must be a list of names'],
             'recipients as a list' => [['recipients' => ['to']], 'approval_display.recipients must map a tool to its recipients'],

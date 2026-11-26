@@ -457,7 +457,8 @@ final class ApprovalDeclaration
      * argument saying what kind of record they are (`{model}`) or a fixed word
      * that is the kind of every id the read lists, the read-only tool that
      * returns them and its arguments, the fields read for each kind (`*` for
-     * any other), and the templates a returned record is named by.
+     * any other), and the templates a returned record is named by, for every
+     * kind or per kind in the same way.
      * The gateway reads it; the control-plane names the id by the same kind
      * through `named_ids`.
      *
@@ -501,7 +502,17 @@ final class ApprovalDeclaration
                 }
             }
             if (isset($read['name'])) {
-                self::names($read['name'], "{$where}.name", $found);
+                // A list of templates for every kind, or a list per kind with
+                // `*` for any other, as `fields` maps them.
+                $name = $read['name'];
+                $lists = is_array($name) && array_is_list($name) ? [$name] : (is_array($name) && $name !== [] ? $name : [null]);
+                $bad = [];
+                foreach ($lists as $list) {
+                    self::names($list, '', $bad);
+                }
+                if ($bad !== []) {
+                    $found[] = "{$where}.name must be a list of names, or map a kind to one";
+                }
             }
         }
     }
