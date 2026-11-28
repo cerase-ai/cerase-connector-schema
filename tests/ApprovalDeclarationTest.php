@@ -100,6 +100,16 @@ final class ApprovalDeclarationTest extends TestCase
         ]]]]));
     }
 
+    public function test_a_read_takes_its_ids_at_a_path_and_its_kind_from_the_object_holding_each(): void
+    {
+        // A CRM note names its parent as `body.data[].Parent_Id`, an object
+        // holding the record's id and its module's name.
+        self::assertSame([], ApprovalDeclaration::violations(['record_names' => ['read' => [[
+            'tools' => ['create_records'], 'ids' => ['body.data.Parent_Id.id'], 'kind' => '{module.api_name}',
+            'with' => 'get_records', 'arguments' => ['query_params' => ['ids' => '{ids}']],
+        ]]]]));
+    }
+
     public function test_a_key_left_empty_is_read_as_not_declared(): void
     {
         self::assertSame([], ApprovalDeclaration::violations(['sentences' => null, 'recipients' => null]));
@@ -171,6 +181,10 @@ final class ApprovalDeclarationTest extends TestCase
             'a read whose kind is an unclosed argument' => [['record_names' => ['read' => [['tools' => ['w'], 'ids' => ['ids'], 'kind' => '{model', 'with' => 'r', 'arguments' => []]]]],
                 'approval_display.record_names.read.0.kind must be a word or name an argument of the write, as {argument}'],
             'a read whose kind is two words' => [['record_names' => ['read' => [['tools' => ['w'], 'ids' => ['ids'], 'kind' => 'two words', 'with' => 'r', 'arguments' => []]]]],
+                'approval_display.record_names.read.0.kind must be a word or name an argument of the write, as {argument}'],
+            'a read whose kind is a path ending in a dot' => [['record_names' => ['read' => [['tools' => ['w'], 'ids' => ['ids'], 'kind' => '{module.}', 'with' => 'r', 'arguments' => []]]]],
+                'approval_display.record_names.read.0.kind must be a word or name an argument of the write, as {argument}'],
+            'a read whose kind is a path starting with a dot' => [['record_names' => ['read' => [['tools' => ['w'], 'ids' => ['ids'], 'kind' => '{.api_name}', 'with' => 'r', 'arguments' => []]]]],
                 'approval_display.record_names.read.0.kind must be a word or name an argument of the write, as {argument}'],
             'a read whose kind is empty braces' => [['record_names' => ['read' => [['tools' => ['w'], 'ids' => ['ids'], 'kind' => '{}', 'with' => 'r', 'arguments' => []]]]],
                 'approval_display.record_names.read.0.kind must be a word or name an argument of the write, as {argument}'],

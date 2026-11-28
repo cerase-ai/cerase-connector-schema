@@ -485,8 +485,10 @@ final class ApprovalDeclaration
             }
             self::names($read['tools'], "{$where}.tools", $found);
             self::names($read['ids'], "{$where}.ids", $found);
+            // `{argument}`, or a path read from the object holding each id,
+            // `{module.api_name}`, when the ids sit at a path in the call.
             if (! is_string($read['kind'])
-                || (preg_match('/^\{[A-Za-z_][A-Za-z0-9_]*\}$/', $read['kind']) !== 1
+                || (preg_match('/^\{[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*\}$/', $read['kind']) !== 1
                     && preg_match('/^[A-Za-z0-9_.-]+$/', $read['kind']) !== 1)) {
                 $found[] = "{$where}.kind must be a word or name an argument of the write, as {argument}";
             }
